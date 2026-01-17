@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Briefcase, FileText, DollarSign, Upload, Users, Wrench, Settings, ChevronRight, Plus, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { LogOut, Briefcase, FileText, DollarSign, Upload, Users, Wrench, Settings, ChevronRight, Plus, Download, CheckCircle, Clock, AlertCircle, Activity, Truck, Camera, HardHat } from 'lucide-react';
 import { colors, LYT_INFO, URLS, mockProjects, mockInvoices, mockFiles } from '../config/constants';
 
 const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMode }) => {
@@ -19,6 +19,8 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Briefcase },
+    { id: 'production', label: 'Daily Production', icon: Activity },
+    { id: 'equipment', label: 'Equipment Check', icon: Truck },
     { id: 'jobs', label: 'Jobs/SOWs', icon: FileText },
     { id: 'invoices', label: 'Invoices', icon: DollarSign },
     { id: 'documents', label: 'Documents', icon: Upload },
@@ -325,6 +327,317 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
     </div>
   );
 
+  // Field Operations - Daily Production Log
+  const [productionLog, setProductionLog] = useState({
+    date: new Date().toISOString().split('T')[0],
+    project: '',
+    fiberFootage: '',
+    splicesCompleted: '',
+    polesSet: '',
+    hddBoreLength: '',
+    conduitInstalled: '',
+    notes: '',
+    photos: [],
+  });
+
+  const renderProduction = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>Daily Production Log</h2>
+          <p style={{ color: colors.gray }}>Record your crew's daily work progress</p>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Date *</label>
+            <input
+              type="date"
+              value={productionLog.date}
+              onChange={(e) => setProductionLog({ ...productionLog, date: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Project / SOW *</label>
+            <select
+              value={productionLog.project}
+              onChange={(e) => setProductionLog({ ...productionLog, project: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            >
+              <option value="">Select project...</option>
+              {mockProjects.filter(p => p.status === 'active').map(p => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: colors.teal }}>Production Quantities</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Fiber Installed (ft)</label>
+            <input
+              type="number"
+              value={productionLog.fiberFootage}
+              onChange={(e) => setProductionLog({ ...productionLog, fiberFootage: e.target.value })}
+              placeholder="0"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Splices Completed</label>
+            <input
+              type="number"
+              value={productionLog.splicesCompleted}
+              onChange={(e) => setProductionLog({ ...productionLog, splicesCompleted: e.target.value })}
+              placeholder="0"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Poles Set</label>
+            <input
+              type="number"
+              value={productionLog.polesSet}
+              onChange={(e) => setProductionLog({ ...productionLog, polesSet: e.target.value })}
+              placeholder="0"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>HDD Bore (ft)</label>
+            <input
+              type="number"
+              value={productionLog.hddBoreLength}
+              onChange={(e) => setProductionLog({ ...productionLog, hddBoreLength: e.target.value })}
+              placeholder="0"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Conduit (ft)</label>
+            <input
+              type="number"
+              value={productionLog.conduitInstalled}
+              onChange={(e) => setProductionLog({ ...productionLog, conduitInstalled: e.target.value })}
+              placeholder="0"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Notes / Comments</label>
+          <textarea
+            value={productionLog.notes}
+            onChange={(e) => setProductionLog({ ...productionLog, notes: e.target.value })}
+            placeholder="Any delays, issues, or additional notes..."
+            rows={3}
+            style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor, resize: 'vertical' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>
+            <Camera size={16} style={{ display: 'inline', marginRight: '6px' }} />
+            Photo Documentation
+          </label>
+          <div style={{ border: `2px dashed ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', padding: '24px', textAlign: 'center' }}>
+            <Camera size={32} color={colors.gray} style={{ marginBottom: '8px' }} />
+            <p style={{ color: colors.gray, marginBottom: '8px' }}>Drag photos here or click to upload</p>
+            <input type="file" accept="image/*" multiple style={{ display: 'none' }} id="contractor-photo-upload" />
+            <label htmlFor="contractor-photo-upload" style={{ padding: '8px 16px', backgroundColor: colors.teal, color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem' }}>
+              Select Photos
+            </label>
+          </div>
+        </div>
+
+        <button
+          onClick={() => alert('Production log submitted!')}
+          style={{ width: '100%', padding: '14px', backgroundColor: colors.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
+        >
+          Submit Production Log
+        </button>
+      </div>
+    </div>
+  );
+
+  // Field Operations - Equipment Pre-Use Inspection
+  const [equipmentCheck, setEquipmentCheck] = useState({
+    date: new Date().toISOString().split('T')[0],
+    equipmentType: '',
+    equipmentId: '',
+    mileage: '',
+    items: {
+      tires: null,
+      brakes: null,
+      lights: null,
+      fluids: null,
+      safetyEquipment: null,
+      fireExtinguisher: null,
+      firstAidKit: null,
+      triangles: null,
+    },
+    issues: '',
+  });
+
+  const equipmentTypes = [
+    'Pickup Truck',
+    'Service Van',
+    'Bucket Truck',
+    'Trailer',
+    'HDD Drill Rig',
+    'Mini Excavator',
+    'Fusion Splicer',
+    'OTDR',
+  ];
+
+  const inspectionItems = [
+    { key: 'tires', label: 'Tires / Wheels' },
+    { key: 'brakes', label: 'Brakes' },
+    { key: 'lights', label: 'Lights / Signals' },
+    { key: 'fluids', label: 'Fluids (Oil, Coolant)' },
+    { key: 'safetyEquipment', label: 'Safety Equipment' },
+    { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+    { key: 'firstAidKit', label: 'First Aid Kit' },
+    { key: 'triangles', label: 'Warning Triangles' },
+  ];
+
+  const renderEquipment = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>Equipment Pre-Use Inspection</h2>
+          <p style={{ color: colors.gray }}>Complete before operating any equipment</p>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Date *</label>
+            <input
+              type="date"
+              value={equipmentCheck.date}
+              onChange={(e) => setEquipmentCheck({ ...equipmentCheck, date: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Equipment Type *</label>
+            <select
+              value={equipmentCheck.equipmentType}
+              onChange={(e) => setEquipmentCheck({ ...equipmentCheck, equipmentType: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            >
+              <option value="">Select type...</option>
+              {equipmentTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Unit # / ID *</label>
+            <input
+              type="text"
+              value={equipmentCheck.equipmentId}
+              onChange={(e) => setEquipmentCheck({ ...equipmentCheck, equipmentId: e.target.value })}
+              placeholder="e.g., T-101"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Mileage / Hours</label>
+            <input
+              type="text"
+              value={equipmentCheck.mileage}
+              onChange={(e) => setEquipmentCheck({ ...equipmentCheck, mileage: e.target.value })}
+              placeholder="Current reading"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+        </div>
+
+        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: colors.teal }}>Inspection Checklist</h4>
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+          {inspectionItems.map(item => (
+            <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: darkMode ? colors.dark : '#f8fafc', borderRadius: '8px' }}>
+              <span>{item.label}</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setEquipmentCheck({ ...equipmentCheck, items: { ...equipmentCheck.items, [item.key]: 'pass' } })}
+                  style={{
+                    padding: '6px 16px',
+                    backgroundColor: equipmentCheck.items[item.key] === 'pass' ? colors.green : 'transparent',
+                    border: `1px solid ${colors.green}`,
+                    borderRadius: '6px',
+                    color: equipmentCheck.items[item.key] === 'pass' ? '#fff' : colors.green,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  Pass
+                </button>
+                <button
+                  onClick={() => setEquipmentCheck({ ...equipmentCheck, items: { ...equipmentCheck.items, [item.key]: 'fail' } })}
+                  style={{
+                    padding: '6px 16px',
+                    backgroundColor: equipmentCheck.items[item.key] === 'fail' ? colors.coral : 'transparent',
+                    border: `1px solid ${colors.coral}`,
+                    borderRadius: '6px',
+                    color: equipmentCheck.items[item.key] === 'fail' ? '#fff' : colors.coral,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  Fail
+                </button>
+                <button
+                  onClick={() => setEquipmentCheck({ ...equipmentCheck, items: { ...equipmentCheck.items, [item.key]: 'na' } })}
+                  style={{
+                    padding: '6px 16px',
+                    backgroundColor: equipmentCheck.items[item.key] === 'na' ? colors.gray : 'transparent',
+                    border: `1px solid ${colors.gray}`,
+                    borderRadius: '6px',
+                    color: equipmentCheck.items[item.key] === 'na' ? '#fff' : colors.gray,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  N/A
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>
+            <AlertCircle size={16} style={{ display: 'inline', marginRight: '6px' }} />
+            Issues / Deficiencies Found
+          </label>
+          <textarea
+            value={equipmentCheck.issues}
+            onChange={(e) => setEquipmentCheck({ ...equipmentCheck, issues: e.target.value })}
+            placeholder="Describe any issues found..."
+            rows={3}
+            style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor, resize: 'vertical' }}
+          />
+        </div>
+
+        <button
+          onClick={() => alert('Equipment inspection submitted!')}
+          style={{ width: '100%', padding: '14px', backgroundColor: colors.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
+        >
+          Submit Inspection
+        </button>
+      </div>
+    </div>
+  );
+
   const renderSettings = () => (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '24px' }}>Settings</h2>
@@ -357,6 +670,8 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return renderDashboard();
+      case 'production': return renderProduction();
+      case 'equipment': return renderEquipment();
       case 'jobs': return renderJobs();
       case 'invoices': return renderInvoices();
       case 'documents': return renderDocuments();
