@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Briefcase, FileText, DollarSign, Upload, Users, Wrench, Settings, ChevronRight, Plus, Download, CheckCircle, Clock, AlertCircle, Activity, Truck, Camera, HardHat } from 'lucide-react';
+import { LogOut, Briefcase, FileText, DollarSign, Upload, Users, Wrench, Settings, ChevronRight, Plus, Download, CheckCircle, Clock, AlertCircle, Activity, Truck, Camera, HardHat, Zap, Phone, Eye, AlertTriangle } from 'lucide-react';
 import { colors, LYT_INFO, URLS, mockProjects, mockInvoices, mockFiles } from '../config/constants';
 
 const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMode }) => {
@@ -20,6 +20,8 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Briefcase },
     { id: 'production', label: 'Daily Production', icon: Activity },
+    { id: 'otdr', label: 'OTDR Results', icon: Zap },
+    { id: 'tickets', label: '811 Tickets', icon: Phone },
     { id: 'equipment', label: 'Equipment Check', icon: Truck },
     { id: 'jobs', label: 'Jobs/SOWs', icon: FileText },
     { id: 'invoices', label: 'Invoices', icon: DollarSign },
@@ -638,6 +640,294 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
     </div>
   );
 
+  // OTDR Test Results
+  const [otdrTests, setOtdrTests] = useState([
+    { id: 1, date: '2025-01-16', project: 'Metro Fiber Ring', segment: 'Span A1-A5', result: 'pass', loss: '0.18 dB/km', file: 'otdr_a1a5.sor' },
+    { id: 2, date: '2025-01-15', project: 'Metro Fiber Ring', segment: 'Span A5-A10', result: 'pass', loss: '0.21 dB/km', file: 'otdr_a5a10.sor' },
+  ]);
+
+  const [newOtdr, setNewOtdr] = useState({
+    date: new Date().toISOString().split('T')[0],
+    project: '',
+    segment: '',
+    result: 'pass',
+    loss: '',
+  });
+
+  const renderOtdr = () => (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>OTDR Test Results</h2>
+          <p style={{ color: colors.gray }}>Upload and track fiber test results</p>
+        </div>
+      </div>
+
+      {/* Upload New Test */}
+      <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', marginBottom: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Upload New Test Result</h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Date *</label>
+            <input
+              type="date"
+              value={newOtdr.date}
+              onChange={(e) => setNewOtdr({ ...newOtdr, date: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Project *</label>
+            <select
+              value={newOtdr.project}
+              onChange={(e) => setNewOtdr({ ...newOtdr, project: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            >
+              <option value="">Select project...</option>
+              {mockProjects.filter(p => p.status === 'active').map(p => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Fiber Segment *</label>
+            <input
+              type="text"
+              value={newOtdr.segment}
+              onChange={(e) => setNewOtdr({ ...newOtdr, segment: e.target.value })}
+              placeholder="e.g., Span A1-A5"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Loss (dB/km)</label>
+            <input
+              type="text"
+              value={newOtdr.loss}
+              onChange={(e) => setNewOtdr({ ...newOtdr, loss: e.target.value })}
+              placeholder="e.g., 0.18"
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Result *</label>
+            <select
+              value={newOtdr.result}
+              onChange={(e) => setNewOtdr({ ...newOtdr, result: e.target.value })}
+              style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+            >
+              <option value="pass">Pass</option>
+              <option value="fail">Fail - Needs Resplice</option>
+              <option value="marginal">Marginal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>
+            <Upload size={16} style={{ display: 'inline', marginRight: '6px' }} />
+            OTDR Trace File (.sor, .trc)
+          </label>
+          <div style={{ border: `2px dashed ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
+            <input type="file" accept=".sor,.trc,.pdf" style={{ display: 'none' }} id="contractor-otdr-upload" />
+            <label htmlFor="contractor-otdr-upload" style={{ padding: '8px 16px', backgroundColor: colors.teal, color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem' }}>
+              Select File
+            </label>
+          </div>
+        </div>
+
+        <button
+          onClick={() => alert('OTDR test uploaded!')}
+          style={{ padding: '12px 24px', backgroundColor: colors.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '500', cursor: 'pointer' }}
+        >
+          Upload Test Result
+        </button>
+      </div>
+
+      {/* Recent Tests */}
+      <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Recent Test Results</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ backgroundColor: darkMode ? colors.dark : '#f8fafc' }}>
+                <th style={{ textAlign: 'left', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Date</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Project</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Segment</th>
+                <th style={{ textAlign: 'left', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Loss</th>
+                <th style={{ textAlign: 'center', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Result</th>
+                <th style={{ textAlign: 'center', padding: '12px', fontSize: '0.85rem', color: colors.gray }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {otdrTests.map(test => (
+                <tr key={test.id} style={{ borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
+                  <td style={{ padding: '12px' }}>{test.date}</td>
+                  <td style={{ padding: '12px' }}>{test.project}</td>
+                  <td style={{ padding: '12px' }}>{test.segment}</td>
+                  <td style={{ padding: '12px' }}>{test.loss}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      fontWeight: '500',
+                      backgroundColor: test.result === 'pass' ? `${colors.green}20` : `${colors.coral}20`,
+                      color: test.result === 'pass' ? colors.green : colors.coral,
+                      textTransform: 'capitalize',
+                    }}>
+                      {test.result}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button style={{ padding: '6px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      <Eye size={18} color={colors.teal} />
+                    </button>
+                    <button style={{ padding: '6px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      <Download size={18} color={colors.gray} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 811 Ticket Tracking
+  const [tickets, setTickets] = useState([
+    { id: 1, ticketNumber: '2501160001', status: 'active', address: '123 Main St', expires: '2025-01-23', created: '2025-01-16' },
+    { id: 2, ticketNumber: '2501140002', status: 'active', address: '456 Oak Ave', expires: '2025-01-21', created: '2025-01-14' },
+  ]);
+
+  const [newTicket, setNewTicket] = useState({
+    ticketNumber: '',
+    address: '',
+    expires: '',
+  });
+
+  const renderTickets = () => {
+    const expiringSoon = tickets.filter(t => {
+      const daysUntil = Math.ceil((new Date(t.expires) - new Date()) / (1000 * 60 * 60 * 24));
+      return daysUntil <= 3 && daysUntil > 0;
+    });
+
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>811 Ticket Tracking</h2>
+            <p style={{ color: colors.gray }}>Track underground utility locate tickets</p>
+          </div>
+        </div>
+
+        {expiringSoon.length > 0 && (
+          <div style={{ backgroundColor: `${colors.coral}15`, border: `1px solid ${colors.coral}`, borderRadius: '12px', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertTriangle size={24} color={colors.coral} />
+            <div>
+              <p style={{ fontWeight: '600', color: colors.coral }}>{expiringSoon.length} ticket(s) expiring within 3 days!</p>
+              <p style={{ fontSize: '0.9rem', color: colors.gray }}>Renew tickets before starting work.</p>
+            </div>
+          </div>
+        )}
+
+        <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', marginBottom: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Add New Ticket</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Ticket Number *</label>
+              <input
+                type="text"
+                value={newTicket.ticketNumber}
+                onChange={(e) => setNewTicket({ ...newTicket, ticketNumber: e.target.value })}
+                placeholder="e.g., 2501160001"
+                style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Work Address *</label>
+              <input
+                type="text"
+                value={newTicket.address}
+                onChange={(e) => setNewTicket({ ...newTicket, address: e.target.value })}
+                placeholder="Street address"
+                style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Expiration Date *</label>
+              <input
+                type="date"
+                value={newTicket.expires}
+                onChange={(e) => setNewTicket({ ...newTicket, expires: e.target.value })}
+                style={{ width: '100%', padding: '10px', border: `1px solid ${darkMode ? '#374151' : '#ddd'}`, borderRadius: '8px', backgroundColor: darkMode ? colors.dark : '#fff', color: textColor }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => alert('Ticket added!')}
+            style={{ padding: '10px 20px', backgroundColor: colors.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '500', cursor: 'pointer' }}
+          >
+            Add Ticket
+          </button>
+        </div>
+
+        <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>All Tickets</h3>
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {tickets.map(ticket => {
+              const daysUntil = Math.ceil((new Date(ticket.expires) - new Date()) / (1000 * 60 * 60 * 24));
+              const isExpired = daysUntil < 0;
+              const isExpiringSoon = daysUntil <= 3 && daysUntil >= 0;
+
+              return (
+                <div
+                  key={ticket.id}
+                  style={{
+                    padding: '16px',
+                    backgroundColor: darkMode ? colors.dark : '#f8fafc',
+                    borderRadius: '8px',
+                    borderLeft: `4px solid ${isExpired ? colors.coral : isExpiringSoon ? colors.orange : colors.green}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <Phone size={16} color={colors.teal} />
+                        <span style={{ fontWeight: '600' }}>#{ticket.ticketNumber}</span>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          backgroundColor: isExpired ? `${colors.coral}20` : `${colors.green}20`,
+                          color: isExpired ? colors.coral : colors.green,
+                        }}>
+                          {isExpired ? 'EXPIRED' : 'Active'}
+                        </span>
+                      </div>
+                      <p style={{ color: colors.gray, fontSize: '0.9rem' }}>{ticket.address}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '0.85rem', color: isExpiringSoon ? colors.orange : colors.gray }}>
+                        Expires: {ticket.expires}
+                      </p>
+                      {isExpiringSoon && !isExpired && (
+                        <p style={{ fontSize: '0.8rem', color: colors.orange, fontWeight: '500' }}>⚠️ {daysUntil} day(s)</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSettings = () => (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '24px' }}>Settings</h2>
@@ -671,6 +961,8 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
     switch (activeTab) {
       case 'dashboard': return renderDashboard();
       case 'production': return renderProduction();
+      case 'otdr': return renderOtdr();
+      case 'tickets': return renderTickets();
       case 'equipment': return renderEquipment();
       case 'jobs': return renderJobs();
       case 'invoices': return renderInvoices();
