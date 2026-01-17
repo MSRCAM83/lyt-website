@@ -1,1309 +1,1826 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, FileText, Users, DollarSign, Bell, Settings, LogOut, Sun, Moon, Menu, X, Plus, Check, ChevronRight, Upload, Download, Folder, Search, Filter, Calendar, Phone, Mail, AlertCircle, CheckCircle, Edit, Trash2, Eye, Play, Pause, Coffee, ChevronDown, Zap, Shield, Award, Target, ArrowRight, Send, Facebook, Linkedin, Instagram } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Shield, Award, Users, Truck, ChevronRight, Menu, X, CheckCircle, AlertCircle, Upload, FileText, Building, User, CreditCard, Heart, Briefcase, Wrench, DollarSign, ArrowLeft, ArrowRight, Eye, Download, Sun, Moon, LogOut, Home, FolderOpen, UserCircle, Settings, Calendar } from 'lucide-react';
 
-// Theme colors based on LYT logo
+// ============================================================================
+// CONFIGURATION - UPDATE THIS URL AFTER DEPLOYING GOOGLE APPS SCRIPT
+// ============================================================================
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzmgFbGJTaUar2d6nN1EJKM9DMZgLH8tUTjlI69M8tsMfgAylUiZvq1q05StGxlCHw/exec';
+
+// PDF URLs from your GitHub repo
+const PDF_URLS = {
+  w4: '/Form W-4 sign.pdf',
+  w9: '/Form W-9 sign.pdf',
+  msa: '/LYT MSA 2006 - v3.4.pdf'
+};
+
+// Rate Card Google Sheet
+const RATE_CARD_URL = 'https://docs.google.com/spreadsheets/d/10Py5x0vIUWPzKn1ZeTaIGyaEJonbz-0BHmSYV-20rB4/edit';
+
+// Brand Colors
 const colors = {
-  blue: '#0077B6',
+  oceanBlue: '#0077B6',
   teal: '#00B4D8',
   green: '#2E994B',
-  darkBlue: '#023E8A',
-  dark: '#0a1628',
+  coral: '#e85a4f',
+  darkNavy: '#0d1b2a',
+  darkBg: '#0a1628'
 };
 
-// Stock images from Unsplash (free to use) - matched to content
-const images = {
-  hero: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=1920&q=80', // fiber optic blue glow
-  fiberClose: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', // fiber optic strands
-  networkSwitch: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', // network equipment
-  construction: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80', // construction workers
-  aerial: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800&q=80', // utility poles
-  underground: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=80', // excavation trench
-  testing: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80', // tech testing
-  team: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80', // professional team meeting
-  aboutHero: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&q=80', // construction work
-  servicesHero: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=1920&q=80', // fiber
-  contactHero: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1920&q=80', // team
-};
-
-// Mock data for portal (same as before)
-const mockUsers = [
-  { id: 1, name: 'Matt Campbell', email: 'matt@lytcomm.com', role: 'admin', phone: '555-0100', emergency_contact: 'Jane Campbell - 555-0101', avatar: 'MC' },
-  { id: 2, name: 'John Rivera', email: 'john@lytcomm.com', role: 'supervisor', phone: '555-0102', emergency_contact: 'Maria Rivera - 555-0103', avatar: 'JR' },
-  { id: 3, name: 'Sarah Chen', email: 'sarah@lytcomm.com', role: 'technician', phone: '555-0104', emergency_contact: 'Mike Chen - 555-0105', avatar: 'SC' },
-  { id: 4, name: 'Marcus Johnson', email: 'marcus@lytcomm.com', role: 'technician', phone: '555-0106', emergency_contact: 'Lisa Johnson - 555-0107', avatar: 'MJ' },
-];
-
-const mockProjects = [
-  { id: 1, name: 'Downtown Fiber Expansion', client: 'City of Springfield', address: '450 Main St, Springfield, TX', status: 'active', crew: [3, 4], start_date: '2024-12-01', end_date: '2025-02-15', notes: 'Phase 2 of city infrastructure upgrade. 12-strand single mode.' },
-  { id: 2, name: 'Bayshore Business Park', client: 'Bayshore Properties LLC', address: '8900 Seawall Blvd, Galveston, TX', status: 'active', crew: [3], start_date: '2024-12-15', end_date: '2025-01-30', notes: 'New construction FTTH. 48-count distribution.' },
-  { id: 3, name: 'Harbor Medical Center', client: 'UTMB Health', address: '301 University Blvd, Galveston, TX', status: 'on-hold', crew: [4], start_date: '2025-01-10', end_date: '2025-03-01', notes: 'Waiting on permits. High-priority medical facility.' },
-  { id: 4, name: 'Strand District Upgrade', client: 'Galveston Historical Foundation', address: '2100 Strand, Galveston, TX', status: 'complete', crew: [3, 4], start_date: '2024-10-01', end_date: '2024-11-30', notes: 'Underground boring complete. All testing passed.' },
-];
-
-const mockTimeEntries = [
-  { id: 1, user_id: 3, date: '2024-12-30', clock_in: '07:00', clock_out: '16:30', break_mins: 60, status: 'approved' },
-  { id: 2, user_id: 3, date: '2024-12-29', clock_in: '06:30', clock_out: '15:00', break_mins: 30, status: 'approved' },
-  { id: 3, user_id: 4, date: '2024-12-30', clock_in: '07:15', clock_out: '17:00', break_mins: 45, status: 'pending' },
-  { id: 4, user_id: 3, date: '2024-12-31', clock_in: '07:00', clock_out: null, break_mins: 0, status: 'active' },
-];
-
-const mockFiles = [
-  { id: 1, name: 'Safety Manual 2024.pdf', folder: 'Safety Docs', size: '2.4 MB', uploaded_by: 'Matt Campbell', date: '2024-11-15' },
-  { id: 2, name: 'OTDR Testing Procedures.pdf', folder: 'SOPs & Procedures', size: '1.1 MB', uploaded_by: 'Matt Campbell', date: '2024-10-20' },
-  { id: 3, name: 'Daily Safety Checklist.pdf', folder: 'Forms', size: '245 KB', uploaded_by: 'John Rivera', date: '2024-12-01' },
-  { id: 4, name: 'Splice Closure Specs.pdf', folder: 'Project Files', size: '3.8 MB', uploaded_by: 'Matt Campbell', date: '2024-12-10' },
-  { id: 5, name: 'Vehicle Inspection Form.pdf', folder: 'Forms', size: '180 KB', uploaded_by: 'John Rivera', date: '2024-11-28' },
-  { id: 6, name: 'Fusion Splicer SOP.pdf', folder: 'SOPs & Procedures', size: '890 KB', uploaded_by: 'Matt Campbell', date: '2024-09-15' },
-];
-
-const mockInvoices = [
-  { id: 1, number: 'INV-2024-001', client: 'Galveston Historical Foundation', amount: 45750.00, status: 'paid', date: '2024-12-01' },
-  { id: 2, number: 'INV-2024-002', client: 'City of Springfield', amount: 28500.00, status: 'sent', date: '2024-12-20' },
-  { id: 3, number: 'INV-2024-003', client: 'Bayshore Properties LLC', amount: 12350.00, status: 'draft', date: '2024-12-28' },
-];
-
-const mockAnnouncements = [
-  { id: 1, title: 'Holiday Schedule', content: 'Office closed Jan 1st for New Year. Emergency on-call rotation in effect.', date: '2024-12-28', author: 'Matt Campbell' },
-  { id: 2, title: 'New Safety Vests', content: 'Class 3 high-vis vests are now required on all job sites. Pick yours up from the warehouse.', date: '2024-12-20', author: 'Matt Campbell' },
-];
-
-// Services data with images - matched to descriptions
-const services = [
-  { icon: Zap, title: 'Fiber Optic Splicing', description: 'Precision fusion splicing for single-mode and multi-mode fiber. Low-loss connections guaranteed with comprehensive OTDR testing and documentation.', image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&q=80' }, // Blue glowing fiber strands
-  { icon: Play, title: 'Activation Services', description: 'End-to-end fiber activation including equipment installation, signal testing, and network turn-up. Get your infrastructure online fast.', image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&q=80' }, // Server/network rack with cables
-  { icon: Search, title: 'Troubleshooting & Testing', description: 'Expert fault location and repair using advanced OTDR, power meters, and visual fault locators. Full test reports provided.', image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&q=80' }, // Technician with testing equipment
-  { icon: Target, title: 'Aerial Construction', description: 'Complete aerial fiber installation including strand placement, lashing, and cable installation. Pole attachment coordination included.', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&q=80' }, // Utility poles with wires against sky
-  { icon: MapPin, title: 'Underground Construction', description: 'Directional boring, trenching, and conduit installation. Minimal surface disruption with professional restoration.', image: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=600&q=80' }, // Excavation/construction trench
-  { icon: Shield, title: 'Emergency Response', description: '24/7 emergency fiber repair services. Rapid response to minimize downtime and restore critical communications.', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80' }, // Construction worker at night/urgent work
-];
-
-// Logo Component
-const Logo = ({ size = 'normal', light = false }) => {
-  const sizes = {
-    small: { text: '24px', sub: '8px' },
-    normal: { text: '32px', sub: '10px' },
-    large: { text: '48px', sub: '12px' },
-  };
-  
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <div style={{ 
-        fontSize: sizes[size].text, 
-        fontWeight: '700',
-        background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal}, ${colors.green})`,
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        letterSpacing: '-1px'
-      }}>
-        lyt
-      </div>
-      <div style={{ 
-        fontSize: sizes[size].sub, 
-        fontWeight: '600', 
-        color: light ? 'rgba(255,255,255,0.7)' : '#64748b',
-        letterSpacing: '1.5px',
-        lineHeight: 1.2
-      }}>
-        <div>COMMUNICATIONS</div>
-      </div>
-    </div>
-  );
-};
-
+// ============================================================================
+// MAIN APP COMPONENT
+// ============================================================================
 export default function App() {
-  const [view, setView] = useState('public');
-  const [currentPage, setCurrentPage] = useState('home');
-  const [scrolled, setScrolled] = useState(false);
-  
-  // Portal state
-  const [darkMode, setDarkMode] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [portalPage, setPortalPage] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  // Auth state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  
-  // Time clock state
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [isOnBreak, setIsOnBreak] = useState(false);
-  const [clockInTime, setClockInTime] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Other state
-  const [projectFilter, setProjectFilter] = useState('all');
-  const [selectedFolder, setSelectedFolder] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProject, setSelectedProject] = useState(null);
-  
-  // Contact form
-  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
-  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [currentView, setCurrentView] = useState('home');
+  const [darkMode, setDarkMode] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (currentUser) {
-      const activeEntry = mockTimeEntries.find(e => e.user_id === currentUser.id && e.status === 'active');
-      if (activeEntry) {
-        setIsClockedIn(true);
-        setClockInTime(activeEntry.clock_in);
-      }
-    }
-  }, [currentUser]);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const user = mockUsers.find(u => u.email === loginEmail);
-    if (user) {
-      setCurrentUser(user);
-      setPortalPage('dashboard');
-      setLoginError('');
-    } else {
-      setLoginError('Invalid email or password');
-    }
+  const navigate = (view) => {
+    setCurrentView(view);
+    setMobileMenuOpen(false);
+    window.scrollTo(0, 0);
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
-    setView('public');
-    setCurrentPage('home');
-    setIsClockedIn(false);
-    setClockInTime(null);
+    setUser(null);
+    navigate('home');
   };
 
-  const handleClockIn = () => {
-    setIsClockedIn(true);
-    setClockInTime(currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }));
-  };
+  // Render based on current view
+  if (currentView === 'employee-onboarding') {
+    return <EmployeeOnboarding onBack={() => navigate('portal-select')} darkMode={darkMode} />;
+  }
+  
+  if (currentView === 'contractor-onboarding') {
+    return <ContractorOnboarding onBack={() => navigate('portal-select')} darkMode={darkMode} />;
+  }
 
-  const handleClockOut = () => {
-    setIsClockedIn(false);
-    setClockInTime(null);
-    setIsOnBreak(false);
-  };
+  if (currentView === 'employee-login') {
+    return <EmployeeLogin onLogin={(u) => { setUser(u); navigate('dashboard'); }} onBack={() => navigate('portal-select')} darkMode={darkMode} />;
+  }
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    setFormSubmitted(true);
-    setTimeout(() => setFormSubmitted(false), 5000);
-    setContactForm({ name: '', email: '', phone: '', company: '', message: '' });
-  };
+  if (currentView === 'dashboard' && user) {
+    return <EmployeeDashboard user={user} onLogout={handleLogout} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
 
-  const theme = {
-    bg: darkMode ? '#0f172a' : '#f8fafc',
-    bgCard: darkMode ? '#1e293b' : '#ffffff',
-    bgHover: darkMode ? '#334155' : '#f1f5f9',
-    text: darkMode ? '#f1f5f9' : '#1e293b',
-    textMuted: darkMode ? '#94a3b8' : '#64748b',
-    border: darkMode ? '#334155' : '#e2e8f0',
-    accent: colors.blue,
-    accentLight: darkMode ? '#0077B620' : '#0077B610',
-  };
+  // Public website views
+  const bgColor = darkMode ? colors.darkBg : '#ffffff';
+  const textColor = darkMode ? '#ffffff' : '#1a1a2e';
+  const mutedColor = darkMode ? '#a0aec0' : '#666666';
+  const cardBg = darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa';
 
-  const getNavItems = () => {
-    const base = [
-      { id: 'dashboard', label: 'Dashboard', icon: Bell },
-      { id: 'timeclock', label: 'Time Clock', icon: Clock },
-      { id: 'projects', label: 'Projects', icon: MapPin },
-      { id: 'files', label: 'Files', icon: FileText },
-    ];
-    if (currentUser?.role === 'admin' || currentUser?.role === 'supervisor') {
-      base.push({ id: 'invoices', label: 'Invoices', icon: DollarSign });
-    }
-    base.push({ id: 'team', label: 'Team', icon: Users });
-    if (currentUser?.role === 'admin') {
-      base.push({ id: 'users', label: 'Manage Users', icon: Settings });
-    }
-    return base;
-  };
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor }}>
+      {/* Navigation */}
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        backgroundColor: darkMode ? 'rgba(10, 22, 40, 0.95)' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigate('home')}>
+            <div style={{ width: '40px', height: '40px', background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white' }}>LYT</div>
+            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>LYT Communications</span>
+          </div>
 
-  // ============================================
-  // PUBLIC WEBSITE
-  // ============================================
-  if (view === 'public') {
-    return (
-      <div style={{ fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif", color: '#1e293b' }}>
-        {/* Navigation */}
-        <header style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          background: scrolled ? 'rgba(255,255,255,0.98)' : (currentPage === 'home' ? 'transparent' : 'rgba(255,255,255,0.98)'),
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid #e2e8f0' : 'none',
-          transition: 'all 0.3s ease'
-        }}>
-          <div style={{
-            maxWidth: '1280px',
-            margin: '0 auto',
-            padding: '16px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <Logo light={!scrolled && currentPage === 'home'} />
-
-            {/* Desktop Nav */}
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-              {['Home', 'About', 'Services', 'Contact'].map(item => (
-                <button
-                  key={item}
-                  onClick={() => { setCurrentPage(item.toLowerCase()); window.scrollTo(0, 0); }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    color: currentPage === item.toLowerCase() 
-                      ? colors.blue 
-                      : (scrolled || currentPage !== 'home' ? '#374151' : 'rgba(255,255,255,0.9)'),
-                    cursor: 'pointer',
-                    padding: '8px 0',
-                    position: 'relative',
-                    transition: 'color 0.3s'
-                  }}
-                >
-                  {item}
-                  {currentPage === item.toLowerCase() && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: '2px',
-                      background: colors.blue,
-                      borderRadius: '2px'
-                    }} />
-                  )}
-                </button>
-              ))}
-              <button
-                onClick={() => setView('portal')}
+          {/* Desktop Menu */}
+          <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }} className="desktop-menu">
+            {['home', 'about', 'services', 'contact'].map(item => (
+              <span
+                key={item}
+                onClick={() => navigate(item)}
                 style={{
-                  background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0,119,182,0.4)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
+                  color: currentView === item ? colors.teal : mutedColor,
+                  fontWeight: currentView === item ? '600' : '400',
+                  transition: 'color 0.3s'
                 }}
               >
-                <Users size={16} /> Employee Portal
-              </button>
-            </nav>
+                {item.charAt(0).toUpperCase() + item.slice(1)}
+              </span>
+            ))}
+            <button
+              onClick={() => navigate('portal-select')}
+              style={{
+                padding: '10px 24px',
+                background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                color: 'white',
+                border: 'none',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Portal
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: mutedColor, padding: '8px' }}
+            >
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
           </div>
-        </header>
 
-        {/* HOME PAGE */}
-        {currentPage === 'home' && (
-          <>
-            {/* Hero Section with Background Image */}
-            <section style={{
-              minHeight: '100vh',
-              background: `linear-gradient(135deg, rgba(10,22,40,0.92), rgba(2,62,138,0.88)), url(${images.hero})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              position: 'relative',
-            }}>
-              <div style={{
-                maxWidth: '1280px',
-                margin: '0 auto',
-                padding: '140px 24px 100px',
-                position: 'relative',
-                zIndex: 1
-              }}>
-                <div style={{ maxWidth: '720px' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '8px 16px',
-                    background: 'rgba(255,255,255,0.1)',
-                    borderRadius: '20px',
-                    fontSize: '13px',
-                    color: colors.teal,
-                    fontWeight: '600',
-                    marginBottom: '24px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    letterSpacing: '2px'
-                  }}>
-                    BUILDING DIGITAL FUTURES
-                  </div>
-                  
-                  <h1 style={{
-                    fontSize: 'clamp(42px, 6vw, 68px)',
-                    fontWeight: '700',
-                    color: 'white',
-                    lineHeight: '1.1',
-                    margin: '0 0 24px 0'
-                  }}>
-                    Expert Fiber Optic
-                    <span style={{
-                      background: `linear-gradient(135deg, ${colors.teal}, ${colors.green})`,
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      display: 'block'
-                    }}>
-                      Construction Services
-                    </span>
-                  </h1>
-                  
-                  <p style={{
-                    fontSize: '19px',
-                    color: 'rgba(255,255,255,0.75)',
-                    lineHeight: '1.7',
-                    margin: '0 0 40px 0',
-                    maxWidth: '540px'
-                  }}>
-                    From splicing to activation, aerial to underground — we deliver reliable fiber optic infrastructure across Texas and the Gulf Coast region.
-                  </p>
-                  
-                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => { setCurrentPage('contact'); window.scrollTo(0, 0); }}
-                      style={{
-                        background: colors.green,
-                        color: 'white',
-                        border: 'none',
-                        padding: '16px 32px',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(46,153,75,0.5)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      Request a Quote <ArrowRight size={18} />
-                    </button>
-                    <button
-                      onClick={() => { setCurrentPage('services'); window.scrollTo(0, 0); }}
-                      style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.25)',
-                        padding: '16px 32px',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                    >
-                      Our Services
-                    </button>
-                  </div>
-                </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: textColor }}
+            className="mobile-menu-btn"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div style={{ padding: '20px', borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }}>
+            {['home', 'about', 'services', 'contact'].map(item => (
+              <div
+                key={item}
+                onClick={() => navigate(item)}
+                style={{ padding: '15px 0', cursor: 'pointer', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}
+              >
+                {item.charAt(0).toUpperCase() + item.slice(1)}
               </div>
-            </section>
-
-            {/* Stats Section */}
-            <section style={{ background: 'white', padding: '80px 24px', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{
-                maxWidth: '1280px',
-                margin: '0 auto',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '40px',
-                textAlign: 'center'
-              }}>
-                {[
-                  { value: '15+', label: 'Years Experience' },
-                  { value: '500+', label: 'Projects Completed' },
-                  { value: '10K+', label: 'Miles of Fiber' },
-                  { value: '24/7', label: 'Emergency Support' },
-                ].map((stat, i) => (
-                  <div key={i}>
-                    <div style={{
-                      fontSize: '52px',
-                      fontWeight: '700',
-                      background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      marginBottom: '8px'
-                    }}>
-                      {stat.value}
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '16px', fontWeight: '500' }}>{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Services Preview with Images */}
-            <section style={{ padding: '100px 24px', background: '#f8fafc' }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                  <h2 style={{ fontSize: '40px', fontWeight: '700', margin: '0 0 16px 0', color: '#1e293b' }}>
-                    Our Services
-                  </h2>
-                  <p style={{ fontSize: '18px', color: '#64748b', maxWidth: '600px', margin: '0 auto' }}>
-                    Comprehensive fiber optic solutions from installation to maintenance
-                  </p>
-                </div>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-                  gap: '28px'
-                }}>
-                  {services.slice(0, 3).map((service, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        background: 'white',
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        border: '1px solid #e2e8f0',
-                        transition: 'transform 0.3s, box-shadow 0.3s',
-                        cursor: 'pointer'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-6px)';
-                        e.currentTarget.style.boxShadow = '0 25px 50px -15px rgba(0,0,0,0.12)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <div style={{
-                        height: '200px',
-                        background: `linear-gradient(to bottom, transparent, rgba(0,0,0,0.4)), url(${service.image})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        position: 'relative'
-                      }}>
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '16px',
-                          left: '16px',
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '12px',
-                          background: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                        }}>
-                          <service.icon size={26} color={colors.blue} />
-                        </div>
-                      </div>
-                      <div style={{ padding: '24px' }}>
-                        <h3 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 10px 0', color: '#1e293b' }}>
-                          {service.title}
-                        </h3>
-                        <p style={{ fontSize: '15px', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
-                          {service.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ textAlign: 'center', marginTop: '48px' }}>
-                  <button
-                    onClick={() => { setCurrentPage('services'); window.scrollTo(0, 0); }}
-                    style={{
-                      background: 'none',
-                      border: `2px solid ${colors.blue}`,
-                      color: colors.blue,
-                      padding: '14px 32px',
-                      borderRadius: '8px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = colors.blue;
-                      e.currentTarget.style.color = 'white';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = 'none';
-                      e.currentTarget.style.color = colors.blue;
-                    }}
-                  >
-                    View All Services <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* Why Choose Us with Image */}
-            <section style={{ padding: '100px 24px', background: 'white' }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'center' }}>
-                  <div>
-                    <h2 style={{ fontSize: '38px', fontWeight: '700', margin: '0 0 24px 0', color: '#1e293b' }}>
-                      Why Choose LYT Communications?
-                    </h2>
-                    <p style={{ fontSize: '17px', color: '#64748b', lineHeight: '1.7', marginBottom: '32px' }}>
-                      We bring decades of combined experience to every project. Our team of certified technicians delivers quality workmanship with a commitment to safety and customer satisfaction.
-                    </p>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      {[
-                        { icon: Award, title: 'Certified Technicians', desc: 'Factory-trained and certified splicing professionals' },
-                        { icon: Shield, title: 'Safety First', desc: 'Rigorous safety protocols on every job site' },
-                        { icon: Clock, title: 'On-Time Delivery', desc: 'We meet deadlines and keep projects on schedule' },
-                        { icon: CheckCircle, title: 'Quality Guaranteed', desc: 'Comprehensive testing and documentation provided' },
-                      ].map((item, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '16px' }}>
-                          <div style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '12px',
-                            background: `${colors.green}12`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <item.icon size={24} color={colors.green} />
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '4px', fontSize: '16px' }}>{item.title}</div>
-                            <div style={{ fontSize: '14px', color: '#64748b' }}>{item.desc}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Image + CTA Card */}
-                  <div style={{ position: 'relative' }}>
-                    <div style={{
-                      borderRadius: '20px',
-                      overflow: 'hidden',
-                      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'
-                    }}>
-                      <img 
-                        src={images.team} 
-                        alt="Professional team" 
-                        style={{ width: '100%', height: '320px', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '-40px',
-                      left: '20px',
-                      right: '20px',
-                      background: `linear-gradient(135deg, ${colors.darkBlue}, ${colors.blue})`,
-                      borderRadius: '16px',
-                      padding: '28px',
-                      color: 'white',
-                      boxShadow: '0 20px 40px -10px rgba(2,62,138,0.4)'
-                    }}>
-                      <h3 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 12px 0' }}>
-                        Ready to Start Your Project?
-                      </h3>
-                      <p style={{ fontSize: '14px', opacity: 0.85, margin: '0 0 20px 0' }}>
-                        Get in touch for a free consultation and quote.
-                      </p>
-                      <button
-                        onClick={() => { setCurrentPage('contact'); window.scrollTo(0, 0); }}
-                        style={{
-                          background: colors.green,
-                          color: 'white',
-                          border: 'none',
-                          padding: '12px 24px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        Contact Us <ArrowRight size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Spacer for overlapping card */}
-            <div style={{ height: '60px', background: 'white' }} />
-          </>
+            ))}
+            <button
+              onClick={() => navigate('portal-select')}
+              style={{
+                width: '100%',
+                marginTop: '15px',
+                padding: '15px',
+                background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                color: 'white',
+                border: 'none',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Portal
+            </button>
+          </div>
         )}
+      </nav>
 
-        {/* ABOUT PAGE */}
-        {currentPage === 'about' && (
-          <>
-            <section style={{
-              paddingTop: '140px',
-              paddingBottom: '80px',
-              background: `linear-gradient(135deg, rgba(10,22,40,0.95), rgba(2,62,138,0.9)), url(${images.aboutHero})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              color: 'white'
-            }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
-                <h1 style={{ fontSize: '52px', fontWeight: '700', margin: '0 0 16px 0' }}>About Us</h1>
-                <p style={{ fontSize: '20px', opacity: 0.85, maxWidth: '600px' }}>
-                  Building digital futures through quality fiber optic infrastructure
-                </p>
+      {/* Main Content */}
+      <main style={{ paddingTop: '80px' }}>
+        {currentView === 'home' && <HomePage navigate={navigate} darkMode={darkMode} colors={colors} cardBg={cardBg} mutedColor={mutedColor} />}
+        {currentView === 'about' && <AboutPage darkMode={darkMode} colors={colors} cardBg={cardBg} mutedColor={mutedColor} />}
+        {currentView === 'services' && <ServicesPage darkMode={darkMode} colors={colors} cardBg={cardBg} mutedColor={mutedColor} />}
+        {currentView === 'contact' && <ContactPage darkMode={darkMode} colors={colors} cardBg={cardBg} mutedColor={mutedColor} />}
+        {currentView === 'portal-select' && <PortalSelect navigate={navigate} darkMode={darkMode} colors={colors} cardBg={cardBg} mutedColor={mutedColor} />}
+      </main>
+
+      {/* Footer */}
+      <footer style={{ backgroundColor: darkMode ? colors.darkNavy : '#1a1a2e', color: 'white', padding: '60px 20px 30px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px', marginBottom: '40px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ width: '40px', height: '40px', background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>LYT</div>
+                <span style={{ fontSize: '20px', fontWeight: 'bold' }}>LYT Communications</span>
               </div>
-            </section>
+              <p style={{ color: '#a0aec0', lineHeight: '1.6' }}>Building the future of telecommunications infrastructure across the Greater Houston area.</p>
+            </div>
+            <div>
+              <h4 style={{ marginBottom: '20px', color: colors.teal }}>Contact</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', color: '#a0aec0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><MapPin size={16} /> 12130 State Highway 3, Webster, TX 77598</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Phone size={16} /> (281) 555-0199</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Mail size={16} /> info@lytcomm.com</div>
+              </div>
+            </div>
+            <div>
+              <h4 style={{ marginBottom: '20px', color: colors.teal }}>Services</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', color: '#a0aec0' }}>
+                <span>HDD Drilling</span>
+                <span>Fiber Splicing</span>
+                <span>Aerial Construction</span>
+                <span>Underground Utilities</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '30px', textAlign: 'center', color: '#a0aec0' }}>
+            <p>© 2026 LYT Communications, LLC. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
 
-            <section style={{ padding: '80px 24px' }}>
-              <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '60px' }}>
-                  <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80" alt="Construction crew at work" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '16px' }} />
-                  <img src="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80" alt="Fiber optic technology" style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '16px' }} />
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-menu { display: none !important; }
+          .mobile-menu-btn { display: block !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ============================================================================
+// HOME PAGE
+// ============================================================================
+function HomePage({ navigate, darkMode, colors, cardBg, mutedColor }) {
+  const stats = [
+    { value: '500+', label: 'Projects Completed' },
+    { value: '15+', label: 'Years Experience' },
+    { value: '50+', label: 'Team Members' },
+    { value: '99%', label: 'Client Satisfaction' }
+  ];
+
+  const services = [
+    { icon: <Truck size={32} />, title: 'HDD Drilling', desc: 'Horizontal directional drilling for minimal surface disruption' },
+    { icon: <Wrench size={32} />, title: 'Fiber Splicing', desc: 'Precision fiber optic cable splicing and testing' },
+    { icon: <Building size={32} />, title: 'Aerial Construction', desc: 'Overhead cable installation and maintenance' }
+  ];
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section style={{
+        minHeight: '90vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '60px 20px',
+        background: darkMode 
+          ? `linear-gradient(135deg, ${colors.darkBg} 0%, ${colors.darkNavy} 100%)`
+          : `linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)`
+      }}>
+        <div style={{ maxWidth: '900px' }}>
+          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '800', marginBottom: '30px', lineHeight: '1.2' }}>
+            Building Tomorrow's
+            <span style={{ background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}> Fiber Network</span>
+          </h1>
+          <p style={{ fontSize: '1.25rem', color: mutedColor, marginBottom: '40px', lineHeight: '1.6' }}>
+            LYT Communications delivers expert fiber optic construction services across the Greater Houston area. From underground utilities to aerial installation, we build the infrastructure that connects communities.
+          </p>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('contact')}
+              style={{
+                padding: '16px 40px',
+                background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                color: 'white',
+                border: 'none',
+                borderRadius: '30px',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}
+            >
+              Get Started <ChevronRight size={20} />
+            </button>
+            <button
+              onClick={() => navigate('services')}
+              style={{
+                padding: '16px 40px',
+                background: 'transparent',
+                color: colors.teal,
+                border: `2px solid ${colors.teal}`,
+                borderRadius: '30px',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Our Services
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section style={{ padding: '80px 20px', backgroundColor: cardBg }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px' }}>
+            {stats.map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '3rem', fontWeight: '800', background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stat.value}</div>
+                <div style={{ color: mutedColor, fontSize: '1.1rem' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Services Preview */}
+      <section style={{ padding: '100px 20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: '2.5rem', fontWeight: '700', marginBottom: '60px' }}>Our Core Services</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+            {services.map((service, i) => (
+              <div key={i} style={{
+                padding: '40px',
+                backgroundColor: cardBg,
+                borderRadius: '16px',
+                border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                transition: 'transform 0.3s, box-shadow 0.3s'
+              }}>
+                <div style={{ color: colors.teal, marginBottom: '20px' }}>{service.icon}</div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '15px' }}>{service.title}</h3>
+                <p style={{ color: mutedColor, lineHeight: '1.6' }}>{service.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section style={{
+        padding: '100px 20px',
+        background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+        textAlign: 'center'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: '700', color: 'white', marginBottom: '20px' }}>Ready to Build Together?</h2>
+          <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.9)', marginBottom: '40px' }}>
+            Join our network of skilled contractors or become part of the LYT team.
+          </p>
+          <button
+            onClick={() => navigate('portal-select')}
+            style={{
+              padding: '16px 50px',
+              backgroundColor: 'white',
+              color: colors.oceanBlue,
+              border: 'none',
+              borderRadius: '30px',
+              fontSize: '1.1rem',
+              fontWeight: '700',
+              cursor: 'pointer'
+            }}
+          >
+            Access Portal
+          </button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ============================================================================
+// ABOUT PAGE
+// ============================================================================
+function AboutPage({ darkMode, colors, cardBg, mutedColor }) {
+  const values = [
+    { icon: <Shield size={28} />, title: 'Safety First', desc: 'Zero compromise on workplace safety and compliance' },
+    { icon: <Award size={28} />, title: 'Excellence', desc: 'Delivering quality that exceeds expectations' },
+    { icon: <Users size={28} />, title: 'Teamwork', desc: 'Collaborative approach with clients and partners' },
+    { icon: <Clock size={28} />, title: 'Reliability', desc: 'On-time delivery, every project, every time' }
+  ];
+
+  return (
+    <section style={{ padding: '80px 20px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '3rem', fontWeight: '700', marginBottom: '30px', textAlign: 'center' }}>About LYT Communications</h1>
+        
+        <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px', marginBottom: '60px' }}>
+          <h2 style={{ color: colors.teal, marginBottom: '20px' }}>Our Story</h2>
+          <p style={{ color: mutedColor, lineHeight: '1.8', marginBottom: '20px' }}>
+            Founded in Webster, Texas, LYT Communications has grown from a small team of dedicated professionals into a leading fiber optic construction company serving the Greater Houston area and beyond.
+          </p>
+          <p style={{ color: mutedColor, lineHeight: '1.8' }}>
+            We specialize in horizontal directional drilling (HDD), fiber splicing, aerial construction, and comprehensive underground utility work. Our commitment to safety, quality, and client satisfaction drives everything we do.
+          </p>
+        </div>
+
+        <h2 style={{ textAlign: 'center', marginBottom: '40px' }}>Our Core Values</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '25px' }}>
+          {values.map((value, i) => (
+            <div key={i} style={{
+              padding: '30px',
+              backgroundColor: cardBg,
+              borderRadius: '12px',
+              textAlign: 'center',
+              border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
+            }}>
+              <div style={{ color: colors.teal, marginBottom: '15px' }}>{value.icon}</div>
+              <h3 style={{ marginBottom: '10px' }}>{value.title}</h3>
+              <p style={{ color: mutedColor, fontSize: '0.95rem' }}>{value.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px', marginTop: '60px' }}>
+          <h2 style={{ color: colors.teal, marginBottom: '20px' }}>Headquarters</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', color: mutedColor }}>
+            <MapPin size={24} color={colors.oceanBlue} />
+            <div>
+              <p style={{ fontWeight: '600', color: darkMode ? 'white' : '#1a1a2e' }}>12130 State Highway 3</p>
+              <p>Webster, TX 77598</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// SERVICES PAGE
+// ============================================================================
+function ServicesPage({ darkMode, colors, cardBg, mutedColor }) {
+  const services = [
+    {
+      title: 'Horizontal Directional Drilling (HDD)',
+      desc: 'Trenchless technology for installing underground utilities with minimal surface disruption. Ideal for road crossings, environmentally sensitive areas, and congested urban environments.',
+      features: ['Minimal surface disruption', 'Cost-effective for long runs', 'Environmentally friendly', 'Reduced restoration costs']
+    },
+    {
+      title: 'Fiber Optic Splicing',
+      desc: 'Precision fusion splicing and mechanical splicing services for single-mode and multi-mode fiber. Complete with OTDR testing and documentation.',
+      features: ['Fusion splicing', 'Mechanical splicing', 'OTDR testing', 'Splice enclosures']
+    },
+    {
+      title: 'Aerial Construction',
+      desc: 'Complete overhead cable installation including strand placement, lashing, and attachments. Full compliance with NESC standards.',
+      features: ['Strand installation', 'Cable lashing', 'Pole attachments', 'NESC compliant']
+    },
+    {
+      title: 'Underground Construction',
+      desc: 'Traditional open-cut trenching and conduit installation for fiber optic and utility infrastructure.',
+      features: ['Conduit placement', 'Trenching', 'Boring', 'Restoration']
+    },
+    {
+      title: 'Testing & Quality Assurance',
+      desc: 'Comprehensive fiber testing including OTDR, power meter, and visual fault location. Full documentation and certification.',
+      features: ['OTDR testing', 'Power meter testing', 'Visual inspection', 'Certification reports']
+    },
+    {
+      title: 'Project Management',
+      desc: 'End-to-end project coordination from permitting to final acceptance. Dedicated project managers ensure on-time, on-budget delivery.',
+      features: ['Permitting support', 'Scheduling', 'Progress reporting', 'Client coordination']
+    }
+  ];
+
+  return (
+    <section style={{ padding: '80px 20px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '3rem', fontWeight: '700', marginBottom: '20px', textAlign: 'center' }}>Our Services</h1>
+        <p style={{ textAlign: 'center', color: mutedColor, marginBottom: '60px', maxWidth: '700px', margin: '0 auto 60px' }}>
+          Comprehensive fiber optic construction services delivered by experienced professionals.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+          {services.map((service, i) => (
+            <div key={i} style={{
+              padding: '35px',
+              backgroundColor: cardBg,
+              borderRadius: '16px',
+              border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
+            }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '600', marginBottom: '15px', color: colors.teal }}>{service.title}</h3>
+              <p style={{ color: mutedColor, lineHeight: '1.6', marginBottom: '20px' }}>{service.desc}</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {service.features.map((feature, j) => (
+                  <li key={j} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', color: mutedColor }}>
+                    <CheckCircle size={16} color={colors.green} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// CONTACT PAGE
+// ============================================================================
+function ContactPage({ darkMode, colors, cardBg, mutedColor }) {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+  };
+
+  return (
+    <section style={{ padding: '80px 20px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '3rem', fontWeight: '700', marginBottom: '20px', textAlign: 'center' }}>Contact Us</h1>
+        <p style={{ textAlign: 'center', color: mutedColor, marginBottom: '60px' }}>
+          Ready to discuss your next project? Get in touch with our team.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
+          {/* Contact Info */}
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', color: colors.teal }}>Get in Touch</h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                <MapPin size={24} color={colors.oceanBlue} />
+                <div>
+                  <p style={{ fontWeight: '600', marginBottom: '5px' }}>Address</p>
+                  <p style={{ color: mutedColor }}>12130 State Highway 3<br />Webster, TX 77598</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                <Phone size={24} color={colors.oceanBlue} />
+                <div>
+                  <p style={{ fontWeight: '600', marginBottom: '5px' }}>Phone</p>
+                  <p style={{ color: mutedColor }}>(281) 555-0199</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                <Mail size={24} color={colors.oceanBlue} />
+                <div>
+                  <p style={{ fontWeight: '600', marginBottom: '5px' }}>Email</p>
+                  <p style={{ color: mutedColor }}>info@lytcomm.com</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                <Clock size={24} color={colors.oceanBlue} />
+                <div>
+                  <p style={{ fontWeight: '600', marginBottom: '5px' }}>Hours</p>
+                  <p style={{ color: mutedColor }}>Mon - Fri: 7:00 AM - 5:00 PM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Form */}
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            {submitted ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <CheckCircle size={60} color={colors.green} style={{ marginBottom: '20px' }} />
+                <h3 style={{ marginBottom: '15px' }}>Message Sent!</h3>
+                <p style={{ color: mutedColor }}>We'll get back to you within 24 hours.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <h2 style={{ marginBottom: '30px', color: colors.teal }}>Send a Message</h2>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <input
+                    type="text"
+                    placeholder="Your Name *"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
+                      color: darkMode ? 'white' : '#1a1a2e',
+                      fontSize: '1rem'
+                    }}
+                  />
                 </div>
                 
-                <h2 style={{ fontSize: '34px', fontWeight: '700', marginBottom: '24px', color: '#1e293b' }}>
-                  Our Story
-                </h2>
-                <p style={{ fontSize: '17px', color: '#475569', lineHeight: '1.8', marginBottom: '24px' }}>
-                  LYT Communications was founded with a simple mission: deliver reliable, high-quality fiber optic infrastructure that powers the connections businesses and communities depend on.
-                </p>
-                <p style={{ fontSize: '17px', color: '#475569', lineHeight: '1.8', marginBottom: '24px' }}>
-                  Based in Texas and serving the Gulf Coast region, our team brings together decades of combined experience in telecommunications construction. From small business installations to large-scale municipal projects, we approach every job with the same commitment to excellence.
-                </p>
-                <p style={{ fontSize: '17px', color: '#475569', lineHeight: '1.8', marginBottom: '48px' }}>
-                  We specialize in fiber optic splicing, activation, testing, and troubleshooting, as well as aerial and underground construction. Our certified technicians use state-of-the-art equipment and follow rigorous safety protocols to ensure every project meets the highest standards.
-                </p>
-
-                <h2 style={{ fontSize: '34px', fontWeight: '700', marginBottom: '24px', color: '#1e293b' }}>
-                  Our Values
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
-                  {[
-                    { title: 'Quality', desc: 'Every splice, every connection, every project done right the first time.' },
-                    { title: 'Safety', desc: 'Zero compromise on safety for our team, clients, and communities.' },
-                    { title: 'Integrity', desc: 'Honest communication, fair pricing, and dependable service.' },
-                    { title: 'Innovation', desc: 'Staying current with the latest technology and best practices.' },
-                  ].map((val, i) => (
-                    <div key={i} style={{
-                      background: '#f8fafc',
-                      padding: '28px',
-                      borderRadius: '12px',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: colors.blue, marginBottom: '10px' }}>
-                        {val.title}
-                      </h3>
-                      <p style={{ fontSize: '15px', color: '#64748b', margin: 0, lineHeight: '1.6' }}>
-                        {val.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </>
-        )}
-
-        {/* SERVICES PAGE */}
-        {currentPage === 'services' && (
-          <>
-            <section style={{
-              paddingTop: '140px',
-              paddingBottom: '80px',
-              background: `linear-gradient(135deg, rgba(10,22,40,0.95), rgba(2,62,138,0.9)), url(${images.servicesHero})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              color: 'white'
-            }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
-                <h1 style={{ fontSize: '52px', fontWeight: '700', margin: '0 0 16px 0' }}>Our Services</h1>
-                <p style={{ fontSize: '20px', opacity: 0.85, maxWidth: '600px' }}>
-                  Comprehensive fiber optic solutions for every project
-                </p>
-              </div>
-            </section>
-
-            <section style={{ padding: '80px 24px' }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
-                  gap: '32px'
-                }}>
-                  {services.map((service, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        background: 'white',
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
-                      }}
-                    >
-                      <div style={{
-                        height: '200px',
-                        background: `url(${service.image})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }} />
-                      <div style={{ padding: '28px' }}>
-                        <div style={{
-                          width: '56px',
-                          height: '56px',
-                          borderRadius: '14px',
-                          background: `linear-gradient(135deg, ${colors.blue}15, ${colors.teal}15)`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: '20px',
-                          marginTop: '-50px',
-                          position: 'relative',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          backgroundColor: 'white'
-                        }}>
-                          <service.icon size={28} color={colors.blue} />
-                        </div>
-                        <h3 style={{ fontSize: '22px', fontWeight: '600', margin: '0 0 12px 0', color: '#1e293b' }}>
-                          {service.title}
-                        </h3>
-                        <p style={{ fontSize: '16px', color: '#64748b', lineHeight: '1.7', margin: 0 }}>
-                          {service.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA */}
-                <div style={{
-                  marginTop: '80px',
-                  background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
-                  borderRadius: '20px',
-                  padding: '60px',
-                  textAlign: 'center',
-                  color: 'white'
-                }}>
-                  <h2 style={{ fontSize: '34px', fontWeight: '700', margin: '0 0 16px 0' }}>
-                    Need a Custom Solution?
-                  </h2>
-                  <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '32px', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
-                    Every project is unique. Contact us to discuss your specific requirements and get a customized quote.
-                  </p>
-                  <button
-                    onClick={() => { setCurrentPage('contact'); window.scrollTo(0, 0); }}
+                <div style={{ marginBottom: '20px' }}>
+                  <input
+                    type="email"
+                    placeholder="Email Address *"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     style={{
-                      background: 'white',
-                      color: colors.blue,
-                      border: 'none',
-                      padding: '16px 40px',
+                      width: '100%',
+                      padding: '14px',
                       borderRadius: '8px',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
+                      border: `1px solid ${darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
+                      color: darkMode ? 'white' : '#1a1a2e',
+                      fontSize: '1rem'
                     }}
-                  >
-                    Get a Quote
-                  </button>
+                  />
                 </div>
-              </div>
-            </section>
-          </>
-        )}
-
-        {/* CONTACT PAGE */}
-        {currentPage === 'contact' && (
-          <>
-            <section style={{
-              paddingTop: '140px',
-              paddingBottom: '80px',
-              background: `linear-gradient(135deg, rgba(10,22,40,0.95), rgba(2,62,138,0.9)), url(${images.contactHero})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              color: 'white'
-            }}>
-              <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
-                <h1 style={{ fontSize: '52px', fontWeight: '700', margin: '0 0 16px 0' }}>Contact Us</h1>
-                <p style={{ fontSize: '20px', opacity: 0.85, maxWidth: '600px' }}>
-                  Ready to start your project? Get in touch with our team.
-                </p>
-              </div>
-            </section>
-
-            <section style={{ padding: '80px 24px' }}>
-              <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '60px' }}>
-                  {/* Form */}
-                  <div>
-                    <h2 style={{ fontSize: '30px', fontWeight: '700', marginBottom: '24px', color: '#1e293b' }}>
-                      Request a Quote
-                    </h2>
-
-                    {formSubmitted ? (
-                      <div style={{
-                        background: `${colors.green}10`,
-                        border: `1px solid ${colors.green}30`,
-                        borderRadius: '12px',
-                        padding: '40px',
-                        textAlign: 'center'
-                      }}>
-                        <CheckCircle size={56} color={colors.green} style={{ marginBottom: '16px' }} />
-                        <h3 style={{ color: colors.green, marginBottom: '8px', fontSize: '22px' }}>Thank You!</h3>
-                        <p style={{ color: '#64748b', fontSize: '16px' }}>We'll be in touch within 24 hours.</p>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleContactSubmit}>
-                        <div style={{ display: 'grid', gap: '20px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                                Name *
-                              </label>
-                              <input
-                                type="text"
-                                required
-                                value={contactForm.name}
-                                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  border: '2px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  fontSize: '15px',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                                Company
-                              </label>
-                              <input
-                                type="text"
-                                value={contactForm.company}
-                                onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  border: '2px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  fontSize: '15px',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                              />
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                                Email *
-                              </label>
-                              <input
-                                type="email"
-                                required
-                                value={contactForm.email}
-                                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  border: '2px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  fontSize: '15px',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                                Phone
-                              </label>
-                              <input
-                                type="tel"
-                                value={contactForm.phone}
-                                onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                                style={{
-                                  width: '100%',
-                                  padding: '14px 16px',
-                                  border: '2px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  fontSize: '15px',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                              Project Details *
-                            </label>
-                            <textarea
-                              required
-                              rows={5}
-                              value={contactForm.message}
-                              onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                              placeholder="Tell us about your project..."
-                              style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                border: '2px solid #e2e8f0',
-                                borderRadius: '8px',
-                                fontSize: '15px',
-                                resize: 'vertical',
-                                boxSizing: 'border-box',
-                                fontFamily: 'inherit',
-                                transition: 'border-color 0.2s'
-                              }}
-                              onFocus={(e) => e.target.style.borderColor = colors.blue}
-                              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                            />
-                          </div>
-
-                          <button
-                            type="submit"
-                            style={{
-                              background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
-                              color: 'white',
-                              border: 'none',
-                              padding: '16px 32px',
-                              borderRadius: '8px',
-                              fontSize: '16px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '10px'
-                            }}
-                          >
-                            <Send size={18} /> Send Message
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-
-                  {/* Contact Info */}
-                  <div>
-                    <h2 style={{ fontSize: '30px', fontWeight: '700', marginBottom: '24px', color: '#1e293b' }}>
-                      Get In Touch
-                    </h2>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '40px' }}>
-                      {[
-                        { icon: Phone, label: 'Phone', value: '(409) 555-0123' },
-                        { icon: Mail, label: 'Email', value: 'info@lytcomm.com' },
-                        { icon: MapPin, label: 'Service Area', value: 'Texas & Gulf Coast Region' },
-                      ].map((item, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '16px' }}>
-                          <div style={{
-                            width: '52px',
-                            height: '52px',
-                            borderRadius: '12px',
-                            background: `${colors.blue}10`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <item.icon size={24} color={colors.blue} />
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '4px', fontSize: '15px' }}>{item.label}</div>
-                            <div style={{ color: '#64748b', fontSize: '16px' }}>{item.value}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{
-                      background: '#f8fafc',
-                      borderRadius: '12px',
-                      padding: '28px',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <h3 style={{ fontSize: '17px', fontWeight: '600', marginBottom: '14px', color: '#1e293b' }}>
-                        Business Hours
-                      </h3>
-                      <div style={{ fontSize: '15px', color: '#64748b', lineHeight: '2' }}>
-                        Monday - Friday: 7:00 AM - 5:00 PM<br />
-                        Saturday: By Appointment<br />
-                        Sunday: Closed<br /><br />
-                        <span style={{ color: colors.green, fontWeight: '600' }}>24/7 Emergency Service Available</span>
-                      </div>
-                    </div>
-                  </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
+                      color: darkMode ? 'white' : '#1a1a2e',
+                      fontSize: '1rem'
+                    }}
+                  />
                 </div>
-              </div>
-            </section>
-          </>
-        )}
-
-        {/* Footer */}
-        <footer style={{ background: colors.dark, color: 'white', padding: '70px 24px 30px' }}>
-          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', marginBottom: '50px' }}>
-              <div>
-                <Logo size="normal" light />
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.7', marginTop: '16px', maxWidth: '260px' }}>
-                  Building digital futures through quality fiber optic infrastructure.
-                </p>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '20px', color: 'rgba(255,255,255,0.9)' }}>Quick Links</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {['Home', 'About', 'Services', 'Contact'].map(link => (
-                    <button
-                      key={link}
-                      onClick={() => { setCurrentPage(link.toLowerCase()); window.scrollTo(0, 0); }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'rgba(255,255,255,0.6)',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        padding: 0
-                      }}
-                    >
-                      {link}
-                    </button>
-                  ))}
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <textarea
+                    placeholder="Your Message *"
+                    required
+                    rows={5}
+                    value={formData.message}
+                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: `1px solid ${darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'white',
+                      color: darkMode ? 'white' : '#1a1a2e',
+                      fontSize: '1rem',
+                      resize: 'vertical'
+                    }}
+                  />
                 </div>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '20px', color: 'rgba(255,255,255,0.9)' }}>Services</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>
-                  <span>Fiber Optic Splicing</span>
-                  <span>Activation Services</span>
-                  <span>Testing & Troubleshooting</span>
-                  <span>Aerial Construction</span>
-                  <span>Underground Construction</span>
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '20px', color: 'rgba(255,255,255,0.9)' }}>Contact</h4>
-                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: '2' }}>
-                  <div>(409) 555-0123</div>
-                  <div>info@lytcomm.com</div>
-                  <div>Texas & Gulf Coast</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              paddingTop: '24px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px'
-            }}>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-                © 2025 LYT Communications. All rights reserved.
-              </div>
-              <button
-                onClick={() => setView('portal')}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'rgba(255,255,255,0.8)',
-                  padding: '10px 18px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <Users size={14} /> Employee Portal
-              </button>
-            </div>
+                
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Send Message
+                </button>
+              </form>
+            )}
           </div>
-        </footer>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// PORTAL SELECT PAGE
+// ============================================================================
+function PortalSelect({ navigate, darkMode, colors, cardBg, mutedColor }) {
+  const options = [
+    {
+      title: "I'm a New Employee",
+      desc: 'Complete your onboarding paperwork including W-4, direct deposit, and safety acknowledgment.',
+      icon: <User size={48} />,
+      action: () => navigate('employee-onboarding'),
+      color: colors.green
+    },
+    {
+      title: "I'm a Contractor",
+      desc: 'Register your company, complete MSA, W-9, insurance verification, and rate card acceptance.',
+      icon: <Building size={48} />,
+      action: () => navigate('contractor-onboarding'),
+      color: colors.teal
+    },
+    {
+      title: 'Existing Employee Login',
+      desc: 'Access your dashboard, time clock, projects, and documents.',
+      icon: <UserCircle size={48} />,
+      action: () => navigate('employee-login'),
+      color: colors.oceanBlue
+    }
+  ];
+
+  return (
+    <section style={{ padding: '80px 20px', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '20px', textAlign: 'center' }}>LYT Portal</h1>
+        <p style={{ textAlign: 'center', color: mutedColor, marginBottom: '50px' }}>Select an option to continue</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px' }}>
+          {options.map((option, i) => (
+            <div
+              key={i}
+              onClick={option.action}
+              style={{
+                padding: '40px 30px',
+                backgroundColor: cardBg,
+                borderRadius: '16px',
+                border: `2px solid transparent`,
+                cursor: 'pointer',
+                textAlign: 'center',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = option.color}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
+            >
+              <div style={{ color: option.color, marginBottom: '20px' }}>{option.icon}</div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '15px' }}>{option.title}</h3>
+              <p style={{ color: mutedColor, lineHeight: '1.5' }}>{option.desc}</p>
+              <div style={{ marginTop: '25px', color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600' }}>
+                Continue <ChevronRight size={20} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// EMPLOYEE ONBOARDING
+// ============================================================================
+function EmployeeOnboarding({ onBack, darkMode }) {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    firstName: '', middleName: '', lastName: '', email: '', phone: '',
+    address: '', city: '', state: '', zip: '', dateOfBirth: '', ssnLast4: '',
+    bankName: '', routingNumber: '', accountNumber: '', accountType: 'checking',
+    emergencyName: '', emergencyRelationship: '', emergencyPhone: '',
+    safetyAcknowledged: false
+  });
+  const [documents, setDocuments] = useState({
+    w4: { signed: false, signedAt: null }
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState(null);
+
+  const totalSteps = 5;
+  const bgColor = darkMode ? colors.darkBg : '#ffffff';
+  const textColor = darkMode ? '#ffffff' : '#1a1a2e';
+  const cardBg = darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa';
+  const inputBg = darkMode ? 'rgba(255,255,255,0.08)' : 'white';
+  const borderColor = darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const signDocument = (docName) => {
+    setDocuments(prev => ({
+      ...prev,
+      [docName]: { signed: true, signedAt: new Date().toISOString() }
+    }));
+  };
+
+  const canProceed = () => {
+    switch(step) {
+      case 1: return formData.firstName && formData.lastName && formData.email && formData.phone;
+      case 2: return documents.w4.signed;
+      case 3: return formData.bankName && formData.routingNumber && formData.accountNumber;
+      case 4: return formData.emergencyName && formData.emergencyPhone;
+      case 5: return formData.safetyAcknowledged;
+      default: return false;
+    }
+  };
+
+  const submitOnboarding = async () => {
+    setSubmitting(true);
+    setError(null);
+
+    const payload = {
+      type: 'employee',
+      formData: {
+        ...formData,
+        accountLast4: formData.accountNumber.slice(-4)
+      },
+      documents
+    };
+
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCompleted(true);
+      } else {
+        setError(result.error || 'Submission failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Your data has been saved locally. Please contact HR.');
+      console.error('Submission error:', err);
+      // Save locally as backup
+      localStorage.setItem('lyt_employee_onboarding_backup', JSON.stringify(payload));
+    }
+
+    setSubmitting(false);
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '14px',
+    borderRadius: '8px',
+    border: `1px solid ${borderColor}`,
+    backgroundColor: inputBg,
+    color: textColor,
+    fontSize: '1rem',
+    marginBottom: '15px'
+  };
+
+  if (completed) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <CheckCircle size={80} color={colors.green} style={{ marginBottom: '30px' }} />
+          <h1 style={{ marginBottom: '20px' }}>Welcome to LYT!</h1>
+          <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '30px' }}>
+            Your onboarding is complete. Your documents have been securely saved. HR will be in touch with next steps.
+          </p>
+          <button
+            onClick={onBack}
+            style={{
+              padding: '14px 40px',
+              background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Return to Portal
+          </button>
+        </div>
       </div>
     );
   }
 
-  // ============================================
-  // EMPLOYEE PORTAL LOGIN
-  // ============================================
-  if (view === 'portal' && !currentUser) {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: `linear-gradient(135deg, ${colors.darkBlue} 0%, ${colors.blue} 50%, ${colors.teal} 100%)`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        fontFamily: "'Segoe UI', system-ui, sans-serif"
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '20px',
-          padding: '48px',
-          width: '100%',
-          maxWidth: '420px',
-          boxShadow: '0 30px 60px -15px rgba(0,0,0,0.3)'
-        }}>
-          <button
-            onClick={() => setView('public')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#64748b',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginBottom: '24px',
-              padding: 0
-            }}
-          >
-            <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /> Back to website
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor }}>
+      {/* Header */}
+      <div style={{ padding: '20px', borderBottom: `1px solid ${borderColor}` }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: colors.teal, cursor: 'pointer', fontSize: '1rem' }}>
+            <ArrowLeft size={20} /> Back
           </button>
+          <span style={{ fontWeight: '600' }}>Employee Onboarding</span>
+          <span style={{ color: darkMode ? '#a0aec0' : '#666' }}>Step {step} of {totalSteps}</span>
+        </div>
+      </div>
 
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Logo size="large" />
-            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '12px', fontWeight: '500' }}>
-              EMPLOYEE PORTAL
+      {/* Progress Bar */}
+      <div style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {[1,2,3,4,5].map(s => (
+            <div key={s} style={{
+              flex: 1,
+              height: '6px',
+              borderRadius: '3px',
+              backgroundColor: s <= step ? colors.green : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0')
+            }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.85rem', color: darkMode ? '#a0aec0' : '#666' }}>
+          <span>Personal Info</span>
+          <span>W-4</span>
+          <span>Direct Deposit</span>
+          <span>Emergency</span>
+          <span>Safety</span>
+        </div>
+      </div>
+
+      {/* Step Content */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
+        {error && (
+          <div style={{ backgroundColor: 'rgba(232, 90, 79, 0.2)', border: `1px solid ${colors.coral}`, padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle color={colors.coral} />
+            {error}
+          </div>
+        )}
+
+        {/* Step 1: Personal Info */}
+        {step === 1 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <User color={colors.teal} /> Personal Information
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <input placeholder="First Name *" value={formData.firstName} onChange={(e) => updateField('firstName', e.target.value)} style={inputStyle} />
+              <input placeholder="Middle Name" value={formData.middleName} onChange={(e) => updateField('middleName', e.target.value)} style={inputStyle} />
+              <input placeholder="Last Name *" value={formData.lastName} onChange={(e) => updateField('lastName', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+              <input type="email" placeholder="Email Address *" value={formData.email} onChange={(e) => updateField('email', e.target.value)} style={inputStyle} />
+              <input type="tel" placeholder="Phone Number *" value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <input placeholder="Street Address" value={formData.address} onChange={(e) => updateField('address', e.target.value)} style={inputStyle} />
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
+              <input placeholder="City" value={formData.city} onChange={(e) => updateField('city', e.target.value)} style={inputStyle} />
+              <input placeholder="State" value={formData.state} onChange={(e) => updateField('state', e.target.value)} style={inputStyle} />
+              <input placeholder="ZIP Code" value={formData.zip} onChange={(e) => updateField('zip', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: darkMode ? '#a0aec0' : '#666' }}>Date of Birth</label>
+                <input type="date" value={formData.dateOfBirth} onChange={(e) => updateField('dateOfBirth', e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: darkMode ? '#a0aec0' : '#666' }}>SSN (Last 4 digits)</label>
+                <input type="password" maxLength={4} placeholder="****" value={formData.ssnLast4} onChange={(e) => updateField('ssnLast4', e.target.value)} style={inputStyle} />
+              </div>
             </div>
           </div>
+        )}
 
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+        {/* Step 2: W-4 */}
+        {step === 2 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText color={colors.teal} /> Form W-4 (Employee Withholding Certificate)
+            </h2>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '20px' }}>
+              Review the W-4 form below and click "I Agree & Sign" to acknowledge.
+            </p>
+            
+            {/* Embedded PDF */}
+            <div style={{ border: `1px solid ${borderColor}`, borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+              <iframe
+                src={PDF_URLS.w4}
+                style={{ width: '100%', height: '600px', border: 'none' }}
+                title="Form W-4"
               />
             </div>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
+            
+            {documents.w4.signed ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: colors.green, padding: '15px', backgroundColor: 'rgba(46, 153, 75, 0.1)', borderRadius: '8px' }}>
+                <CheckCircle /> Document signed on {new Date(documents.w4.signedAt).toLocaleString()}
+              </div>
+            ) : (
+              <button
+                onClick={() => signDocument('w4')}
                 style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s'
+                  padding: '16px 40px',
+                  background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
                 }}
-                onFocus={(e) => e.target.style.borderColor = colors.blue}
-                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-              />
-            </div>
+              >
+                <CheckCircle size={20} /> I Agree & Sign
+              </button>
+            )}
+          </div>
+        )}
 
-            {loginError && (
-              <div style={{ 
-                background: '#fef2f2', 
-                color: '#dc2626', 
-                padding: '12px 16px', 
-                borderRadius: '8px', 
-                marginBottom: '20px',
-                fontSize: '14px',
+        {/* Step 3: Direct Deposit */}
+        {step === 3 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CreditCard color={colors.teal} /> Direct Deposit Setup
+            </h2>
+            
+            <input placeholder="Bank Name *" value={formData.bankName} onChange={(e) => updateField('bankName', e.target.value)} style={inputStyle} />
+            <input placeholder="Routing Number (9 digits) *" value={formData.routingNumber} onChange={(e) => updateField('routingNumber', e.target.value)} style={inputStyle} />
+            <input placeholder="Account Number *" value={formData.accountNumber} onChange={(e) => updateField('accountNumber', e.target.value)} style={inputStyle} />
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '10px' }}>Account Type</label>
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="accountType" value="checking" checked={formData.accountType === 'checking'} onChange={(e) => updateField('accountType', e.target.value)} />
+                  Checking
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="accountType" value="savings" checked={formData.accountType === 'savings'} onChange={(e) => updateField('accountType', e.target.value)} />
+                  Savings
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Emergency Contact */}
+        {step === 4 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Heart color={colors.teal} /> Emergency Contact
+            </h2>
+            
+            <input placeholder="Contact Name *" value={formData.emergencyName} onChange={(e) => updateField('emergencyName', e.target.value)} style={inputStyle} />
+            <input placeholder="Relationship (e.g., Spouse, Parent)" value={formData.emergencyRelationship} onChange={(e) => updateField('emergencyRelationship', e.target.value)} style={inputStyle} />
+            <input type="tel" placeholder="Phone Number *" value={formData.emergencyPhone} onChange={(e) => updateField('emergencyPhone', e.target.value)} style={inputStyle} />
+          </div>
+        )}
+
+        {/* Step 5: Safety Acknowledgment */}
+        {step === 5 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Shield color={colors.teal} /> Safety Acknowledgment
+            </h2>
+            
+            <div style={{ backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'white', padding: '25px', borderRadius: '8px', marginBottom: '25px', border: `1px solid ${borderColor}` }}>
+              <h3 style={{ marginBottom: '15px' }}>LYT Communications Safety Policy</h3>
+              <ul style={{ color: darkMode ? '#a0aec0' : '#666', lineHeight: '1.8', paddingLeft: '20px' }}>
+                <li>I will follow all safety protocols and procedures at all times.</li>
+                <li>I will wear required Personal Protective Equipment (PPE) when necessary.</li>
+                <li>I will report all injuries, near-misses, and unsafe conditions immediately.</li>
+                <li>I will complete all required safety training before beginning field work.</li>
+                <li>I will not operate equipment I have not been trained on.</li>
+                <li>I understand that safety violations may result in disciplinary action.</li>
+              </ul>
+            </div>
+            
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.safetyAcknowledged}
+                onChange={(e) => updateField('safetyAcknowledged', e.target.checked)}
+                style={{ marginTop: '4px', width: '20px', height: '20px' }}
+              />
+              <span>I have read, understand, and agree to comply with LYT Communications' safety policies. I understand that my safety and the safety of my coworkers depends on following these guidelines.</span>
+            </label>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+          <button
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1}
+            style={{
+              padding: '14px 30px',
+              backgroundColor: step === 1 ? 'transparent' : cardBg,
+              color: step === 1 ? 'transparent' : textColor,
+              border: step === 1 ? 'none' : `1px solid ${borderColor}`,
+              borderRadius: '8px',
+              cursor: step === 1 ? 'default' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <ArrowLeft size={20} /> Previous
+          </button>
+          
+          {step < totalSteps ? (
+            <button
+              onClick={() => setStep(step + 1)}
+              disabled={!canProceed()}
+              style={{
+                padding: '14px 30px',
+                background: canProceed() ? `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})` : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0'),
+                color: canProceed() ? 'white' : (darkMode ? '#666' : '#999'),
+                border: 'none',
+                borderRadius: '8px',
+                cursor: canProceed() ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
-              }}>
-                <AlertCircle size={18} />
-                {loginError}
+                gap: '8px',
+                fontWeight: '600'
+              }}
+            >
+              Next <ArrowRight size={20} />
+            </button>
+          ) : (
+            <button
+              onClick={submitOnboarding}
+              disabled={!canProceed() || submitting}
+              style={{
+                padding: '14px 40px',
+                background: canProceed() ? `linear-gradient(135deg, ${colors.green}, #28a745)` : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0'),
+                color: canProceed() ? 'white' : (darkMode ? '#666' : '#999'),
+                border: 'none',
+                borderRadius: '8px',
+                cursor: canProceed() && !submitting ? 'pointer' : 'not-allowed',
+                fontWeight: '600'
+              }}
+            >
+              {submitting ? 'Submitting...' : 'Complete Onboarding'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// CONTRACTOR ONBOARDING
+// ============================================================================
+function ContractorOnboarding({ onBack, darkMode }) {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    companyName: '', dba: '', entityType: '', ein: '',
+    companyAddress: '', companyCity: '', companyState: '', companyZip: '',
+    contactName: '', contactTitle: '', contactEmail: '', contactPhone: '',
+    insuranceCarrier: '', policyNumber: '', insuranceExpiration: '', coiUploaded: false,
+    fleet: [{ type: '', makeModel: '', year: '', vin: '' }],
+    personnel: [{ name: '', role: '', phone: '', certifications: '' }],
+    skills: {},
+    rateCardAccepted: false,
+    bankName: '', routingNumber: '', accountNumber: '', accountType: 'checking'
+  });
+  const [documents, setDocuments] = useState({
+    msa: { signed: false, signedAt: null },
+    w9: { signed: false, signedAt: null }
+  });
+  const [coiFile, setCoiFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState(null);
+
+  const totalSteps = 8;
+  const bgColor = darkMode ? colors.darkBg : '#ffffff';
+  const textColor = darkMode ? '#ffffff' : '#1a1a2e';
+  const cardBg = darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa';
+  const inputBg = darkMode ? 'rgba(255,255,255,0.08)' : 'white';
+  const borderColor = darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateSkill = (skill, value) => {
+    setFormData(prev => ({ ...prev, skills: { ...prev.skills, [skill]: value } }));
+  };
+
+  const signDocument = (docName) => {
+    setDocuments(prev => ({
+      ...prev,
+      [docName]: { signed: true, signedAt: new Date().toISOString() }
+    }));
+  };
+
+  const handleCoiUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCoiFile({
+          name: file.name,
+          mimeType: file.type,
+          data: reader.result.split(',')[1] // Base64 data
+        });
+        updateField('coiUploaded', true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addFleetItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      fleet: [...prev.fleet, { type: '', makeModel: '', year: '', vin: '' }]
+    }));
+  };
+
+  const addPersonnel = () => {
+    setFormData(prev => ({
+      ...prev,
+      personnel: [...prev.personnel, { name: '', role: '', phone: '', certifications: '' }]
+    }));
+  };
+
+  const updateFleet = (index, field, value) => {
+    const newFleet = [...formData.fleet];
+    newFleet[index][field] = value;
+    setFormData(prev => ({ ...prev, fleet: newFleet }));
+  };
+
+  const updatePersonnel = (index, field, value) => {
+    const newPersonnel = [...formData.personnel];
+    newPersonnel[index][field] = value;
+    setFormData(prev => ({ ...prev, personnel: newPersonnel }));
+  };
+
+  const canProceed = () => {
+    switch(step) {
+      case 1: return formData.companyName && formData.contactName && formData.contactEmail;
+      case 2: return documents.msa.signed;
+      case 3: return documents.w9.signed;
+      case 4: return formData.coiUploaded;
+      case 5: return true; // Fleet optional
+      case 6: return Object.values(formData.skills).some(v => v); // At least one skill
+      case 7: return formData.rateCardAccepted;
+      case 8: return formData.bankName && formData.routingNumber && formData.accountNumber;
+      default: return false;
+    }
+  };
+
+  const submitOnboarding = async () => {
+    setSubmitting(true);
+    setError(null);
+
+    const payload = {
+      type: 'contractor',
+      formData: {
+        ...formData,
+        accountLast4: formData.accountNumber.slice(-4)
+      },
+      documents,
+      coiFile
+    };
+
+    try {
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setCompleted(true);
+      } else {
+        setError(result.error || 'Submission failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Your data has been saved locally. Please contact us.');
+      console.error('Submission error:', err);
+      localStorage.setItem('lyt_contractor_onboarding_backup', JSON.stringify(payload));
+    }
+
+    setSubmitting(false);
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '14px',
+    borderRadius: '8px',
+    border: `1px solid ${borderColor}`,
+    backgroundColor: inputBg,
+    color: textColor,
+    fontSize: '1rem',
+    marginBottom: '15px'
+  };
+
+  if (completed) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <CheckCircle size={80} color={colors.green} style={{ marginBottom: '30px' }} />
+          <h1 style={{ marginBottom: '20px' }}>Registration Complete!</h1>
+          <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '30px' }}>
+            Your contractor registration is complete. Your documents have been securely saved to our system. We'll review your information and be in touch within 2-3 business days.
+          </p>
+          <button
+            onClick={onBack}
+            style={{
+              padding: '14px 40px',
+              background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Return to Portal
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor }}>
+      {/* Header */}
+      <div style={{ padding: '20px', borderBottom: `1px solid ${borderColor}` }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: colors.teal, cursor: 'pointer', fontSize: '1rem' }}>
+            <ArrowLeft size={20} /> Back
+          </button>
+          <span style={{ fontWeight: '600' }}>Contractor Registration</span>
+          <span style={{ color: darkMode ? '#a0aec0' : '#666' }}>Step {step} of {totalSteps}</span>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px' }}>
+        <div style={{ display: 'flex', gap: '5px' }}>
+          {[1,2,3,4,5,6,7,8].map(s => (
+            <div key={s} style={{
+              flex: 1,
+              height: '6px',
+              borderRadius: '3px',
+              backgroundColor: s <= step ? colors.teal : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0')
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Step Content */}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
+        {error && (
+          <div style={{ backgroundColor: 'rgba(232, 90, 79, 0.2)', border: `1px solid ${colors.coral}`, padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle color={colors.coral} />
+            {error}
+          </div>
+        )}
+
+        {/* Step 1: Company Info */}
+        {step === 1 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Building color={colors.teal} /> Company Information
+            </h2>
+            
+            <input placeholder="Company Name *" value={formData.companyName} onChange={(e) => updateField('companyName', e.target.value)} style={inputStyle} />
+            <input placeholder="DBA (if different)" value={formData.dba} onChange={(e) => updateField('dba', e.target.value)} style={inputStyle} />
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <select value={formData.entityType} onChange={(e) => updateField('entityType', e.target.value)} style={inputStyle}>
+                <option value="">Entity Type</option>
+                <option value="LLC">LLC</option>
+                <option value="Corporation">Corporation</option>
+                <option value="Sole Proprietor">Sole Proprietor</option>
+                <option value="Partnership">Partnership</option>
+              </select>
+              <input placeholder="EIN" value={formData.ein} onChange={(e) => updateField('ein', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <input placeholder="Company Address" value={formData.companyAddress} onChange={(e) => updateField('companyAddress', e.target.value)} style={inputStyle} />
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
+              <input placeholder="City" value={formData.companyCity} onChange={(e) => updateField('companyCity', e.target.value)} style={inputStyle} />
+              <input placeholder="State" value={formData.companyState} onChange={(e) => updateField('companyState', e.target.value)} style={inputStyle} />
+              <input placeholder="ZIP" value={formData.companyZip} onChange={(e) => updateField('companyZip', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <h3 style={{ marginTop: '30px', marginBottom: '20px', color: colors.teal }}>Primary Contact</h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <input placeholder="Contact Name *" value={formData.contactName} onChange={(e) => updateField('contactName', e.target.value)} style={inputStyle} />
+              <input placeholder="Title" value={formData.contactTitle} onChange={(e) => updateField('contactTitle', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+              <input type="email" placeholder="Email *" value={formData.contactEmail} onChange={(e) => updateField('contactEmail', e.target.value)} style={inputStyle} />
+              <input type="tel" placeholder="Phone" value={formData.contactPhone} onChange={(e) => updateField('contactPhone', e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: MSA */}
+        {step === 2 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText color={colors.teal} /> Master Subcontractor Agreement
+            </h2>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '20px' }}>
+              Review the MSA below and click "I Agree & Sign" to acknowledge acceptance of all terms.
+            </p>
+            
+            <div style={{ border: `1px solid ${borderColor}`, borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+              <iframe
+                src={PDF_URLS.msa}
+                style={{ width: '100%', height: '600px', border: 'none' }}
+                title="Master Subcontractor Agreement"
+              />
+            </div>
+            
+            {documents.msa.signed ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: colors.green, padding: '15px', backgroundColor: 'rgba(46, 153, 75, 0.1)', borderRadius: '8px' }}>
+                <CheckCircle /> MSA signed on {new Date(documents.msa.signedAt).toLocaleString()}
+              </div>
+            ) : (
+              <button
+                onClick={() => signDocument('msa')}
+                style={{
+                  padding: '16px 40px',
+                  background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                <CheckCircle size={20} /> I Agree & Sign
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: W-9 */}
+        {step === 3 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileText color={colors.teal} /> Form W-9 (Taxpayer Identification)
+            </h2>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '20px' }}>
+              Review the W-9 form below and click "I Agree & Sign" to acknowledge.
+            </p>
+            
+            <div style={{ border: `1px solid ${borderColor}`, borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+              <iframe
+                src={PDF_URLS.w9}
+                style={{ width: '100%', height: '600px', border: 'none' }}
+                title="Form W-9"
+              />
+            </div>
+            
+            {documents.w9.signed ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: colors.green, padding: '15px', backgroundColor: 'rgba(46, 153, 75, 0.1)', borderRadius: '8px' }}>
+                <CheckCircle /> W-9 signed on {new Date(documents.w9.signedAt).toLocaleString()}
+              </div>
+            ) : (
+              <button
+                onClick={() => signDocument('w9')}
+                style={{
+                  padding: '16px 40px',
+                  background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                <CheckCircle size={20} /> I Agree & Sign
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Insurance / COI Upload */}
+        {step === 4 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Shield color={colors.teal} /> Insurance & Certificate of Insurance
+            </h2>
+            
+            <input placeholder="Insurance Carrier" value={formData.insuranceCarrier} onChange={(e) => updateField('insuranceCarrier', e.target.value)} style={inputStyle} />
+            <input placeholder="Policy Number" value={formData.policyNumber} onChange={(e) => updateField('policyNumber', e.target.value)} style={inputStyle} />
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: darkMode ? '#a0aec0' : '#666' }}>Expiration Date</label>
+              <input type="date" value={formData.insuranceExpiration} onChange={(e) => updateField('insuranceExpiration', e.target.value)} style={inputStyle} />
+            </div>
+            
+            <div style={{ border: `2px dashed ${borderColor}`, borderRadius: '12px', padding: '40px', textAlign: 'center', marginBottom: '20px' }}>
+              <Upload size={48} color={colors.teal} style={{ marginBottom: '15px' }} />
+              <h3 style={{ marginBottom: '10px' }}>Upload Certificate of Insurance</h3>
+              <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '20px' }}>PDF or image file (max 10MB)</p>
+              
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleCoiUpload}
+                style={{ display: 'none' }}
+                id="coi-upload"
+              />
+              <label
+                htmlFor="coi-upload"
+                style={{
+                  padding: '12px 30px',
+                  background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  fontWeight: '600'
+                }}
+              >
+                Select File
+              </label>
+            </div>
+            
+            {coiFile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: colors.green, padding: '15px', backgroundColor: 'rgba(46, 153, 75, 0.1)', borderRadius: '8px' }}>
+                <CheckCircle /> {coiFile.name} uploaded successfully
               </div>
             )}
+          </div>
+        )}
 
+        {/* Step 5: Fleet & Personnel */}
+        {step === 5 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Truck color={colors.teal} /> Fleet & Personnel
+            </h2>
+            
+            <h3 style={{ marginBottom: '20px' }}>Equipment / Vehicles</h3>
+            {formData.fleet.map((item, index) => (
+              <div key={index} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '15px' }}>
+                <input placeholder="Type (Truck, Drill, etc.)" value={item.type} onChange={(e) => updateFleet(index, 'type', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="Make/Model" value={item.makeModel} onChange={(e) => updateFleet(index, 'makeModel', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="Year" value={item.year} onChange={(e) => updateFleet(index, 'year', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="VIN/ID" value={item.vin} onChange={(e) => updateFleet(index, 'vin', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+              </div>
+            ))}
+            <button onClick={addFleetItem} style={{ background: 'none', border: `1px dashed ${borderColor}`, padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', color: colors.teal, marginBottom: '40px' }}>
+              + Add Equipment
+            </button>
+            
+            <h3 style={{ marginBottom: '20px' }}>Personnel</h3>
+            {formData.personnel.map((person, index) => (
+              <div key={index} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '15px' }}>
+                <input placeholder="Name" value={person.name} onChange={(e) => updatePersonnel(index, 'name', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="Role" value={person.role} onChange={(e) => updatePersonnel(index, 'role', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="Phone" value={person.phone} onChange={(e) => updatePersonnel(index, 'phone', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+                <input placeholder="Certifications" value={person.certifications} onChange={(e) => updatePersonnel(index, 'certifications', e.target.value)} style={{...inputStyle, marginBottom: 0}} />
+              </div>
+            ))}
+            <button onClick={addPersonnel} style={{ background: 'none', border: `1px dashed ${borderColor}`, padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', color: colors.teal }}>
+              + Add Personnel
+            </button>
+          </div>
+        )}
+
+        {/* Step 6: Skills */}
+        {step === 6 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Wrench color={colors.teal} /> Capabilities & Skills
+            </h2>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '25px' }}>Select all services your company can provide:</p>
+            
+            {[
+              { key: 'hddDrilling', label: 'Horizontal Directional Drilling (HDD)' },
+              { key: 'fiberSplicing', label: 'Fiber Optic Splicing' },
+              { key: 'aerialConstruction', label: 'Aerial Construction' },
+              { key: 'undergroundConstruction', label: 'Underground Construction' },
+              { key: 'cableInstallation', label: 'Cable Installation' },
+              { key: 'testing', label: 'Testing & Quality Assurance' },
+              { key: 'restoration', label: 'Site Restoration' },
+              { key: 'permitting', label: 'Permitting Support' }
+            ].map(skill => (
+              <label key={skill.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px', backgroundColor: formData.skills[skill.key] ? 'rgba(0, 180, 216, 0.1)' : 'transparent', borderRadius: '8px', cursor: 'pointer', marginBottom: '10px', border: `1px solid ${formData.skills[skill.key] ? colors.teal : borderColor}` }}>
+                <input
+                  type="checkbox"
+                  checked={formData.skills[skill.key] || false}
+                  onChange={(e) => updateSkill(skill.key, e.target.checked)}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                {skill.label}
+              </label>
+            ))}
+          </div>
+        )}
+
+        {/* Step 7: Rate Card */}
+        {step === 7 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <DollarSign color={colors.teal} /> Rate Card Acceptance
+            </h2>
+            
+            <p style={{ color: darkMode ? '#a0aec0' : '#666', marginBottom: '20px' }}>
+              Please review LYT Communications' current rate card. Rates may vary by project and are subject to change.
+            </p>
+            
+            <a
+              href={RATE_CARD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '15px 25px',
+                backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'white',
+                border: `1px solid ${borderColor}`,
+                borderRadius: '8px',
+                color: colors.teal,
+                textDecoration: 'none',
+                fontWeight: '600',
+                marginBottom: '30px'
+              }}
+            >
+              <Eye size={20} /> View Rate Card (Opens in new tab)
+            </a>
+            
+            <div style={{ backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'white', padding: '25px', borderRadius: '8px', marginBottom: '25px', border: `1px solid ${borderColor}` }}>
+              <p style={{ lineHeight: '1.8' }}>
+                By checking the box below, I acknowledge that I have reviewed LYT Communications' rate card and understand that:
+              </p>
+              <ul style={{ color: darkMode ? '#a0aec0' : '#666', lineHeight: '1.8', paddingLeft: '20px', marginTop: '15px' }}>
+                <li>Rates are project-specific and will be confirmed in each Statement of Work (SOW)</li>
+                <li>LYT reserves the right to modify rates with reasonable notice</li>
+                <li>Payment terms are as specified in the Master Subcontractor Agreement</li>
+              </ul>
+            </div>
+            
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.rateCardAccepted}
+                onChange={(e) => updateField('rateCardAccepted', e.target.checked)}
+                style={{ marginTop: '4px', width: '20px', height: '20px' }}
+              />
+              <span>I have reviewed and accept the current rate card terms.</span>
+            </label>
+          </div>
+        )}
+
+        {/* Step 8: Banking */}
+        {step === 8 && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+            <h2 style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CreditCard color={colors.teal} /> Banking / Payment Information
+            </h2>
+            
+            <input placeholder="Bank Name *" value={formData.bankName} onChange={(e) => updateField('bankName', e.target.value)} style={inputStyle} />
+            <input placeholder="Routing Number (9 digits) *" value={formData.routingNumber} onChange={(e) => updateField('routingNumber', e.target.value)} style={inputStyle} />
+            <input placeholder="Account Number *" value={formData.accountNumber} onChange={(e) => updateField('accountNumber', e.target.value)} style={inputStyle} />
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '10px' }}>Account Type</label>
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="accountType" value="checking" checked={formData.accountType === 'checking'} onChange={(e) => updateField('accountType', e.target.value)} />
+                  Checking
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="accountType" value="savings" checked={formData.accountType === 'savings'} onChange={(e) => updateField('accountType', e.target.value)} />
+                  Savings
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+          <button
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1}
+            style={{
+              padding: '14px 30px',
+              backgroundColor: step === 1 ? 'transparent' : cardBg,
+              color: step === 1 ? 'transparent' : textColor,
+              border: step === 1 ? 'none' : `1px solid ${borderColor}`,
+              borderRadius: '8px',
+              cursor: step === 1 ? 'default' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <ArrowLeft size={20} /> Previous
+          </button>
+          
+          {step < totalSteps ? (
+            <button
+              onClick={() => setStep(step + 1)}
+              disabled={!canProceed()}
+              style={{
+                padding: '14px 30px',
+                background: canProceed() ? `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})` : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0'),
+                color: canProceed() ? 'white' : (darkMode ? '#666' : '#999'),
+                border: 'none',
+                borderRadius: '8px',
+                cursor: canProceed() ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: '600'
+              }}
+            >
+              Next <ArrowRight size={20} />
+            </button>
+          ) : (
+            <button
+              onClick={submitOnboarding}
+              disabled={!canProceed() || submitting}
+              style={{
+                padding: '14px 40px',
+                background: canProceed() ? `linear-gradient(135deg, ${colors.green}, #28a745)` : (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0'),
+                color: canProceed() ? 'white' : (darkMode ? '#666' : '#999'),
+                border: 'none',
+                borderRadius: '8px',
+                cursor: canProceed() && !submitting ? 'pointer' : 'not-allowed',
+                fontWeight: '600'
+              }}
+            >
+              {submitting ? 'Submitting...' : 'Complete Registration'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// EMPLOYEE LOGIN
+// ============================================================================
+function EmployeeLogin({ onLogin, onBack, darkMode }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const bgColor = darkMode ? colors.darkBg : '#ffffff';
+  const textColor = darkMode ? '#ffffff' : '#1a1a2e';
+  const cardBg = darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa';
+  const inputBg = darkMode ? 'rgba(255,255,255,0.08)' : 'white';
+  const borderColor = darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+
+  // Demo users
+  const users = [
+    { email: 'matt@lytcomm.com', password: 'demo123', name: 'Matt Roy', role: 'admin' },
+    { email: 'john@lytcomm.com', password: 'demo123', name: 'John Smith', role: 'supervisor' },
+    { email: 'sarah@lytcomm.com', password: 'demo123', name: 'Sarah Johnson', role: 'employee' }
+  ];
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      onLogin(user);
+    } else {
+      setError('Invalid email or password');
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: bgColor, color: textColor, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '420px' }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: colors.teal, cursor: 'pointer', marginBottom: '30px' }}>
+          <ArrowLeft size={20} /> Back to Portal
+        </button>
+
+        <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div style={{ width: '60px', height: '60px', background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontWeight: 'bold', color: 'white', fontSize: '1.5rem' }}>LYT</div>
+            <h2>Employee Login</h2>
+          </div>
+
+          {error && (
+            <div style={{ backgroundColor: 'rgba(232, 90, 79, 0.2)', border: `1px solid ${colors.coral}`, padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '8px',
+                border: `1px solid ${borderColor}`,
+                backgroundColor: inputBg,
+                color: textColor,
+                fontSize: '1rem',
+                marginBottom: '15px'
+              }}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '8px',
+                border: `1px solid ${borderColor}`,
+                backgroundColor: inputBg,
+                color: textColor,
+                fontSize: '1rem',
+                marginBottom: '25px'
+              }}
+            />
             <button
               type="submit"
               style={{
                 width: '100%',
                 padding: '16px',
-                background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
+                background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`,
                 color: 'white',
                 border: 'none',
-                borderRadius: '10px',
-                fontSize: '16px',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
@@ -1312,462 +1829,223 @@ export default function App() {
             </button>
           </form>
 
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
-            <a href="#" style={{ color: colors.blue, fontSize: '14px', textDecoration: 'none' }}>
-              Forgot password?
-            </a>
-          </div>
-
-          <div style={{ 
-            marginTop: '32px', 
-            padding: '18px', 
-            background: '#f8fafc', 
-            borderRadius: '10px',
-            fontSize: '13px',
-            color: '#64748b'
-          }}>
-            <strong>Demo Accounts:</strong><br />
-            Admin: matt@lytcomm.com<br />
-            Supervisor: john@lytcomm.com<br />
-            Technician: sarah@lytcomm.com<br />
-            <span style={{ fontSize: '12px', opacity: 0.8 }}>(any password works)</span>
+          <div style={{ marginTop: '30px', padding: '20px', backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : '#e9ecef', borderRadius: '8px', fontSize: '0.9rem' }}>
+            <p style={{ fontWeight: '600', marginBottom: '10px' }}>Demo Accounts:</p>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666' }}>matt@lytcomm.com / demo123 (Admin)</p>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666' }}>john@lytcomm.com / demo123 (Supervisor)</p>
+            <p style={{ color: darkMode ? '#a0aec0' : '#666' }}>sarah@lytcomm.com / demo123 (Employee)</p>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  // ============================================
-  // PORTAL DASHBOARD (same as before, abbreviated for length)
-  // ============================================
+// ============================================================================
+// EMPLOYEE DASHBOARD (Placeholder - full implementation from previous build)
+// ============================================================================
+function EmployeeDashboard({ user, onLogout, darkMode, setDarkMode }) {
+  const [activePage, setActivePage] = useState('dashboard');
+  
+  const bgColor = darkMode ? colors.darkBg : '#ffffff';
+  const textColor = darkMode ? '#ffffff' : '#1a1a2e';
+  const sidebarBg = darkMode ? colors.darkNavy : '#f8f9fa';
+  const cardBg = darkMode ? 'rgba(255,255,255,0.05)' : '#ffffff';
+  const mutedColor = darkMode ? '#a0aec0' : '#666666';
+
+  const menuItems = [
+    { id: 'dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { id: 'timeclock', icon: <Clock size={20} />, label: 'Time Clock' },
+    { id: 'projects', icon: <Briefcase size={20} />, label: 'Projects' },
+    { id: 'files', icon: <FolderOpen size={20} />, label: 'Files' },
+    { id: 'team', icon: <Users size={20} />, label: 'Team' }
+  ];
+
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: theme.bg,
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
-      color: theme.text,
-      display: 'flex'
-    }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: bgColor, color: textColor }}>
       {/* Sidebar */}
-      <aside style={{
-        width: sidebarOpen ? '260px' : '72px',
-        background: theme.bgCard,
-        borderRight: `1px solid ${theme.border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 0.3s',
-        position: 'fixed',
-        height: '100vh',
-        zIndex: 40
-      }}>
-        <div style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Logo size="small" />
+      <aside style={{ width: '250px', backgroundColor: sidebarBg, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
+          <div style={{ width: '40px', height: '40px', background: `linear-gradient(135deg, ${colors.oceanBlue}, ${colors.teal})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white' }}>LYT</div>
+          <span style={{ fontWeight: '600' }}>Employee Portal</span>
         </div>
 
-        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-          {getNavItems().map(item => (
+        <nav style={{ flex: 1 }}>
+          {menuItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setPortalPage(item.id)}
+              onClick={() => setActivePage(item.id)}
               style={{
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '12px 16px',
+                padding: '12px 15px',
+                marginBottom: '8px',
+                backgroundColor: activePage === item.id ? `${colors.oceanBlue}20` : 'transparent',
+                color: activePage === item.id ? colors.teal : mutedColor,
                 border: 'none',
                 borderRadius: '8px',
-                background: portalPage === item.id ? theme.accentLight : 'transparent',
-                color: portalPage === item.id ? theme.accent : theme.text,
                 cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: portalPage === item.id ? '600' : '400',
-                marginBottom: '4px',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center'
+                textAlign: 'left',
+                fontSize: '1rem'
               }}
             >
-              <item.icon size={20} />
-              {sidebarOpen && item.label}
+              {item.icon}
+              {item.label}
             </button>
           ))}
         </nav>
 
-        <div style={{ padding: '16px', borderTop: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: '14px'
-          }}>
-            {currentUser?.avatar}
-          </div>
-          {sidebarOpen && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: '600', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {currentUser?.name}
-              </div>
-              <div style={{ fontSize: '12px', color: theme.textMuted, textTransform: 'capitalize' }}>
-                {currentUser?.role}
-              </div>
+        <div style={{ borderTop: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, paddingTop: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+            <div style={{ width: '40px', height: '40px', backgroundColor: colors.teal, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600' }}>
+              {user.name.split(' ').map(n => n[0]).join('')}
             </div>
-          )}
+            <div>
+              <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{user.name}</div>
+              <div style={{ color: mutedColor, fontSize: '0.85rem', textTransform: 'capitalize' }}>{user.role}</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              style={{ flex: 1, padding: '10px', backgroundColor: cardBg, border: 'none', borderRadius: '8px', cursor: 'pointer', color: mutedColor }}
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              onClick={onLogout}
+              style={{ flex: 1, padding: '10px', backgroundColor: cardBg, border: 'none', borderRadius: '8px', cursor: 'pointer', color: colors.coral }}
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, marginLeft: sidebarOpen ? '260px' : '72px', transition: 'margin-left 0.3s' }}>
-        <header style={{
-          background: theme.bgCard,
-          borderBottom: `1px solid ${theme.border}`,
-          padding: '16px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 30
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textMuted, padding: '8px', borderRadius: '8px' }}>
-              <Menu size={20} />
-            </button>
-            <h1 style={{ fontSize: '20px', fontWeight: '600', margin: 0, textTransform: 'capitalize' }}>
-              {portalPage === 'timeclock' ? 'Time Clock' : portalPage === 'users' ? 'Manage Users' : portalPage}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setDarkMode(!darkMode)} style={{ background: theme.bgHover, border: 'none', cursor: 'pointer', color: theme.text, padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button onClick={handleLogout} style={{ background: theme.bgHover, border: 'none', cursor: 'pointer', color: theme.text, padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-              <LogOut size={18} />
-            </button>
-          </div>
-        </header>
+      <main style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
+        <div style={{ marginBottom: '30px' }}>
+          <h1 style={{ marginBottom: '5px' }}>Welcome back, {user.name.split(' ')[0]}!</h1>
+          <p style={{ color: mutedColor }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
 
-        <div style={{ padding: '24px' }}>
-          {/* Dashboard */}
-          {portalPage === 'dashboard' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                {[
-                  { label: 'Hours This Week', value: '38.5', icon: Clock, color: colors.blue },
-                  { label: 'Active Projects', value: mockProjects.filter(p => p.status === 'active').length, icon: MapPin, color: colors.teal },
-                  { label: 'Pending Invoices', value: '$' + mockInvoices.filter(i => i.status !== 'paid').reduce((a, b) => a + b.amount, 0).toLocaleString(), icon: DollarSign, color: colors.green },
-                  { label: 'Team Members', value: mockUsers.length, icon: Users, color: colors.darkBlue },
-                ].map((stat, i) => (
-                  <div key={i} style={{ background: theme.bgCard, borderRadius: '12px', padding: '24px', border: `1px solid ${theme.border}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ color: theme.textMuted, fontSize: '14px' }}>{stat.label}</span>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <stat.icon size={20} color={stat.color} />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '28px', fontWeight: '700' }}>{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, marginBottom: '24px' }}>
-                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${theme.border}` }}>
-                  <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>Announcements</h2>
-                </div>
-                <div style={{ padding: '16px 24px' }}>
-                  {mockAnnouncements.map(ann => (
-                    <div key={ann.id} style={{ padding: '16px 0', borderBottom: `1px solid ${theme.border}` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <Bell size={16} color={colors.blue} />
-                        <span style={{ fontWeight: '600' }}>{ann.title}</span>
-                        <span style={{ fontSize: '12px', color: theme.textMuted, marginLeft: 'auto' }}>{ann.date}</span>
-                      </div>
-                      <p style={{ margin: 0, color: theme.textMuted, fontSize: '14px', lineHeight: '1.5' }}>{ann.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Time Status</h3>
-                  <div style={{ background: isClockedIn ? `${colors.green}15` : theme.bgHover, borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '32px', fontWeight: '700', color: isClockedIn ? colors.green : theme.textMuted, marginBottom: '8px' }}>
-                      {currentTime.toLocaleTimeString()}
-                    </div>
-                    <div style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '16px' }}>
-                      {isClockedIn ? `Clocked in at ${clockInTime}` : 'Not clocked in'}
-                    </div>
-                    <button onClick={() => setPortalPage('timeclock')} style={{ background: theme.accent, color: 'white', border: 'none', padding: '10px 24px', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                      Go to Time Clock
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Your Active Projects</h3>
-                  {mockProjects.filter(p => p.status === 'active').slice(0, 3).map(project => (
-                    <div key={project.id} style={{ padding: '12px', background: theme.bgHover, borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
-                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>{project.name}</div>
-                      <div style={{ fontSize: '13px', color: theme.textMuted }}>{project.client}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Time Clock */}
-          {portalPage === 'timeclock' && (
-            <div>
-              <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, padding: '32px', textAlign: 'center', marginBottom: '24px', maxWidth: '500px', margin: '0 auto 24px' }}>
-                <div style={{ fontSize: '48px', fontWeight: '700', marginBottom: '8px' }}>{currentTime.toLocaleTimeString()}</div>
-                <div style={{ color: theme.textMuted, marginBottom: '24px' }}>{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-
-                {!isClockedIn ? (
-                  <button onClick={handleClockIn} style={{ background: colors.green, color: 'white', border: 'none', padding: '16px 48px', borderRadius: '12px', fontSize: '18px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-                    <Play size={22} /> Clock In
-                  </button>
-                ) : (
-                  <div>
-                    <div style={{ background: `${colors.green}15`, borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-                      <div style={{ color: colors.green, fontWeight: '600', marginBottom: '4px' }}>Currently Working</div>
-                      <div style={{ fontSize: '14px', color: theme.textMuted }}>Clocked in at {clockInTime}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                      <button onClick={() => setIsOnBreak(!isOnBreak)} style={{ background: isOnBreak ? colors.teal : theme.bgHover, color: isOnBreak ? 'white' : theme.text, border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '15px', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Coffee size={18} /> {isOnBreak ? 'End Break' : 'Start Break'}
-                      </button>
-                      <button onClick={handleClockOut} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Pause size={18} /> Clock Out
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}` }}>
-                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${theme.border}` }}>
-                  <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>Timesheet History</h2>
-                </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: theme.bgHover }}>
-                        {['Date', 'Clock In', 'Clock Out', 'Break', 'Total', 'Status'].map(h => (
-                          <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: theme.textMuted }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockTimeEntries.filter(e => currentUser?.role === 'admin' || e.user_id === currentUser?.id).map(entry => {
-                        const clockIn = entry.clock_in ? new Date(`2024-01-01T${entry.clock_in}`) : null;
-                        const clockOut = entry.clock_out ? new Date(`2024-01-01T${entry.clock_out}`) : null;
-                        const totalMins = clockIn && clockOut ? (clockOut - clockIn) / 60000 - entry.break_mins : 0;
-                        const totalHrs = Math.floor(totalMins / 60);
-                        const totalRemMins = Math.round(totalMins % 60);
-                        return (
-                          <tr key={entry.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                            <td style={{ padding: '16px 24px', fontSize: '14px' }}>{entry.date}</td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px' }}>{entry.clock_in}</td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px' }}>{entry.clock_out || '—'}</td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px' }}>{entry.break_mins} min</td>
-                            <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '500' }}>{entry.clock_out ? `${totalHrs}h ${totalRemMins}m` : '—'}</td>
-                            <td style={{ padding: '16px 24px' }}>
-                              <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500', background: entry.status === 'approved' ? `${colors.green}15` : entry.status === 'active' ? `${colors.blue}15` : `${colors.teal}15`, color: entry.status === 'approved' ? colors.green : entry.status === 'active' ? colors.blue : colors.teal }}>
-                                {entry.status}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Projects, Files, Invoices, Team, Users pages... */}
-          {portalPage === 'projects' && (
-            <div>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                {['all', 'active', 'on-hold', 'complete'].map(filter => (
-                  <button key={filter} onClick={() => setProjectFilter(filter)} style={{ padding: '8px 20px', border: 'none', borderRadius: '20px', background: projectFilter === filter ? theme.accent : theme.bgCard, color: projectFilter === filter ? 'white' : theme.text, cursor: 'pointer', fontSize: '14px', fontWeight: '500', textTransform: 'capitalize' }}>
-                    {filter}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-                {mockProjects.filter(p => projectFilter === 'all' || p.status === projectFilter).map(project => (
-                  <div key={project.id} style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, overflow: 'hidden', cursor: 'pointer' }} onClick={() => setSelectedProject(selectedProject?.id === project.id ? null : project)}>
-                    <div style={{ height: '120px', background: `linear-gradient(135deg, ${colors.darkBlue}20, ${colors.teal}20)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      <MapPin size={36} color={theme.textMuted} style={{ opacity: 0.3 }} />
-                      <span style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', background: project.status === 'active' ? colors.green : project.status === 'on-hold' ? '#f59e0b' : colors.blue, color: 'white' }}>
-                        {project.status}
-                      </span>
-                    </div>
-                    <div style={{ padding: '20px' }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>{project.name}</h3>
-                      <div style={{ fontSize: '14px', color: theme.textMuted, marginBottom: '12px' }}>{project.client}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: theme.textMuted }}>
-                        <MapPin size={14} /> {project.address}
-                      </div>
-                      {selectedProject?.id === project.id && (
-                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${theme.border}`, fontSize: '14px' }}>
-                          <p><strong>Dates:</strong> {project.start_date} — {project.end_date}</p>
-                          <p><strong>Notes:</strong> {project.notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {portalPage === 'files' && (
-            <div>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
-                  <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme.textMuted }} />
-                  <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '10px 12px 10px 42px', border: `1px solid ${theme.border}`, borderRadius: '8px', background: theme.bgCard, color: theme.text, fontSize: '14px', boxSizing: 'border-box' }} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto' }}>
-                {['all', 'Safety Docs', 'SOPs & Procedures', 'Forms', 'Project Files'].map(folder => (
-                  <button key={folder} onClick={() => setSelectedFolder(folder)} style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: selectedFolder === folder ? theme.accent : theme.bgCard, color: selectedFolder === folder ? 'white' : theme.text, cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Folder size={14} /> {folder === 'all' ? 'All Files' : folder}
-                  </button>
-                ))}
-              </div>
-              <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: theme.bgHover }}>
-                      {['Name', 'Folder', 'Size', 'Uploaded', 'Actions'].map(h => (
-                        <th key={h} style={{ padding: '12px 24px', textAlign: h === 'Actions' ? 'right' : 'left', fontSize: '13px', fontWeight: '600', color: theme.textMuted }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockFiles.filter(f => selectedFolder === 'all' || f.folder === selectedFolder).filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map(file => (
-                      <tr key={file.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                        <td style={{ padding: '16px 24px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <FileText size={20} color={colors.blue} />
-                            <span style={{ fontSize: '14px', fontWeight: '500' }}>{file.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{file.folder}</td>
-                        <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{file.size}</td>
-                        <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{file.date}</td>
-                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                          <button style={{ background: theme.bgHover, border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', color: theme.text, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
-                            <Download size={14} /> Download
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {portalPage === 'invoices' && (
-            <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: theme.bgHover }}>
-                    {['Invoice #', 'Client', 'Date', 'Amount', 'Status', 'Actions'].map((h, i) => (
-                      <th key={h} style={{ padding: '12px 24px', textAlign: h === 'Amount' ? 'right' : h === 'Status' || h === 'Actions' ? 'center' : 'left', fontSize: '13px', fontWeight: '600', color: theme.textMuted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockInvoices.map(invoice => (
-                    <tr key={invoice.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '500' }}>{invoice.number}</td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px' }}>{invoice.client}</td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{invoice.date}</td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '600', textAlign: 'right' }}>${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                        <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '500', textTransform: 'capitalize', background: invoice.status === 'paid' ? `${colors.green}15` : invoice.status === 'sent' ? `${colors.blue}15` : `${theme.textMuted}15`, color: invoice.status === 'paid' ? colors.green : invoice.status === 'sent' ? colors.blue : theme.textMuted }}>
-                          {invoice.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <button style={{ background: 'none', border: 'none', padding: '6px', cursor: 'pointer', color: theme.textMuted }}><Eye size={16} /></button>
-                          <button style={{ background: 'none', border: 'none', padding: '6px', cursor: 'pointer', color: theme.textMuted }}><Download size={16} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {portalPage === 'team' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-              {mockUsers.map(user => (
-                <div key={user.id} style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600', fontSize: '18px' }}>{user.avatar}</div>
-                    <div>
-                      <div style={{ fontWeight: '600', fontSize: '16px' }}>{user.name}</div>
-                      <div style={{ fontSize: '13px', color: 'white', background: user.role === 'admin' ? colors.darkBlue : user.role === 'supervisor' ? colors.teal : colors.green, padding: '2px 10px', borderRadius: '12px', display: 'inline-block', marginTop: '4px', textTransform: 'capitalize' }}>{user.role}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: theme.textMuted }}><Mail size={16} />{user.email}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: theme.textMuted }}><Phone size={16} />{user.phone}</div>
-                  </div>
+        {activePage === 'dashboard' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+              {[
+                { label: 'Hours This Week', value: '32.5', color: colors.oceanBlue },
+                { label: 'Active Projects', value: '3', color: colors.teal },
+                { label: 'Pending Tasks', value: '7', color: colors.green },
+                { label: 'PTO Balance', value: '12 days', color: colors.coral }
+              ].map((stat, i) => (
+                <div key={i} style={{ backgroundColor: cardBg, padding: '25px', borderRadius: '12px', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+                  <div style={{ color: mutedColor, marginBottom: '10px' }}>{stat.label}</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: stat.color }}>{stat.value}</div>
                 </div>
               ))}
             </div>
-          )}
 
-          {portalPage === 'users' && currentUser?.role === 'admin' && (
-            <div style={{ background: theme.bgCard, borderRadius: '12px', border: `1px solid ${theme.border}`, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: theme.bgHover }}>
-                    {['User', 'Email', 'Role', 'Phone', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '12px 24px', textAlign: h === 'Actions' ? 'right' : 'left', fontSize: '13px', fontWeight: '600', color: theme.textMuted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockUsers.map(user => (
-                    <tr key={user.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${colors.blue}, ${colors.teal})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600', fontSize: '13px' }}>{user.avatar}</div>
-                          <span style={{ fontWeight: '500' }}>{user.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{user.email}</td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500', textTransform: 'capitalize', background: user.role === 'admin' ? `${colors.darkBlue}15` : user.role === 'supervisor' ? `${colors.teal}15` : `${colors.green}15`, color: user.role === 'admin' ? colors.darkBlue : user.role === 'supervisor' ? colors.teal : colors.green }}>{user.role}</span>
-                      </td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: theme.textMuted }}>{user.phone}</td>
-                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <button style={{ background: theme.bgHover, border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', color: theme.text, display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}><Edit size={14} /> Edit</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ backgroundColor: cardBg, padding: '25px', borderRadius: '12px', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+              <h3 style={{ marginBottom: '20px' }}>Recent Announcements</h3>
+              {[
+                { title: 'Safety Meeting Tomorrow', date: 'Jan 17', desc: 'Mandatory safety briefing at 7:00 AM' },
+                { title: 'New Project Kickoff', date: 'Jan 15', desc: 'AT&T fiber expansion starting Monday' }
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '15px 0', borderBottom: i < 1 ? `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0'}` : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontWeight: '600' }}>{item.title}</span>
+                    <span style={{ color: mutedColor, fontSize: '0.9rem' }}>{item.date}</span>
+                  </div>
+                  <p style={{ color: mutedColor }}>{item.desc}</p>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {activePage === 'timeclock' && (
+          <div style={{ backgroundColor: cardBg, padding: '40px', borderRadius: '16px', textAlign: 'center', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+            <Clock size={60} color={colors.teal} style={{ marginBottom: '20px' }} />
+            <h2 style={{ marginBottom: '10px' }}>Time Clock</h2>
+            <p style={{ color: mutedColor, marginBottom: '30px' }}>You are currently clocked out</p>
+            <button style={{
+              padding: '20px 60px',
+              background: `linear-gradient(135deg, ${colors.green}, #28a745)`,
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '1.2rem',
+              fontWeight: '700',
+              cursor: 'pointer'
+            }}>
+              Clock In
+            </button>
+          </div>
+        )}
+
+        {activePage === 'projects' && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>My Projects</h2>
+            {[
+              { name: 'AT&T Fiber - Webster', status: 'In Progress', progress: 65 },
+              { name: 'Comcast Expansion - Clear Lake', status: 'In Progress', progress: 30 },
+              { name: 'Municipal Network - League City', status: 'Pending', progress: 0 }
+            ].map((project, i) => (
+              <div key={i} style={{ backgroundColor: cardBg, padding: '20px', borderRadius: '12px', marginBottom: '15px', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span style={{ fontWeight: '600' }}>{project.name}</span>
+                  <span style={{ color: project.status === 'In Progress' ? colors.green : colors.coral }}>{project.status}</span>
+                </div>
+                <div style={{ backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0', borderRadius: '4px', height: '8px' }}>
+                  <div style={{ width: `${project.progress}%`, backgroundColor: colors.teal, borderRadius: '4px', height: '100%' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activePage === 'files' && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Documents</h2>
+            {['Employee Handbook', 'Safety Manual', 'W-4 Form', 'Direct Deposit Form'].map((file, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: cardBg, padding: '15px 20px', borderRadius: '8px', marginBottom: '10px', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <FileText color={colors.teal} />
+                  {file}
+                </div>
+                <Download size={20} color={mutedColor} style={{ cursor: 'pointer' }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activePage === 'team' && (
+          <div>
+            <h2 style={{ marginBottom: '20px' }}>Team Directory</h2>
+            {[
+              { name: 'Matt Roy', role: 'Owner', phone: '(281) 555-0100', email: 'matt@lytcomm.com' },
+              { name: 'John Smith', role: 'Site Supervisor', phone: '(281) 555-0101', email: 'john@lytcomm.com' },
+              { name: 'Sarah Johnson', role: 'Field Technician', phone: '(281) 555-0102', email: 'sarah@lytcomm.com' }
+            ].map((member, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: cardBg, padding: '20px', borderRadius: '12px', marginBottom: '15px', border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e0e0e0' }}>
+                <div style={{ width: '50px', height: '50px', backgroundColor: colors.teal, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600' }}>
+                  {member.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600' }}>{member.name}</div>
+                  <div style={{ color: mutedColor }}>{member.role}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <a href={`tel:${member.phone}`} style={{ color: colors.oceanBlue }}><Phone size={20} /></a>
+                  <a href={`mailto:${member.email}`} style={{ color: colors.teal }}><Mail size={20} /></a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
