@@ -42,7 +42,7 @@ const EmployeeDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, dark
 
   const handleLogout = () => {
     setLoggedInUser(null);
-    setCurrentPage('portal');
+    setCurrentPage('portal-login');
   };
 
   const userProjects = mockProjects.filter((p) => p.crew.includes(loggedInUser?.id));

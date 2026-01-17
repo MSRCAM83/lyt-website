@@ -11,7 +11,7 @@ const ContractorDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, da
 
   const handleLogout = () => {
     setLoggedInUser(null);
-    setCurrentPage('portal');
+    setCurrentPage('portal-login');
   };
 
   const contractorInvoices = mockInvoices.filter((i) => i.contractorId === loggedInUser?.id);

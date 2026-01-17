@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { LogOut, LayoutDashboard, Users, Briefcase, Clock, DollarSign, FileText, Settings, ChevronRight, CheckCircle, XCircle, AlertCircle, Plus, Search, Filter } from 'lucide-react';
-import { colors, LYT_INFO, mockUsers, mockContractors, mockProjects, mockTimeEntries, mockInvoices } from '../config/constants';
+import { LogOut, LayoutDashboard, Users, Briefcase, Clock, DollarSign, FileText, Settings, ChevronRight, CheckCircle, XCircle, AlertCircle, Plus, Search, Filter, UserPlus, Shield, Mail, Building2, Eye } from 'lucide-react';
+import { colors, LYT_INFO, mockUsers, mockContractors, mockProjects, mockTimeEntries, mockInvoices, ADMIN_CONFIG } from '../config/constants';
+
+// Mock pending onboarding data
+const mockPendingOnboarding = [
+  { id: 1, type: 'employee', name: 'John Smith', email: 'john.smith@email.com', phone: '555-0201', submittedAt: '2025-01-16', status: 'pending' },
+  { id: 2, type: 'contractor', companyName: 'FastFiber Solutions', contactName: 'Maria Garcia', email: 'maria@fastfiber.com', phone: '555-0202', submittedAt: '2025-01-15', status: 'pending' },
+  { id: 3, type: 'employee', name: 'Sarah Johnson', email: 'sarah.j@email.com', phone: '555-0203', submittedAt: '2025-01-14', status: 'pending' },
+];
 
 const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMode }) => {
   const bgColor = darkMode ? colors.dark : '#f8fafc';
@@ -12,13 +19,15 @@ const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMod
 
   const handleLogout = () => {
     setLoggedInUser(null);
-    setCurrentPage('portal');
+    setCurrentPage('portal-login');
   };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'onboarding', label: 'Pending Onboarding', icon: UserPlus, badge: mockPendingOnboarding.length },
     { id: 'employees', label: 'Employees', icon: Users },
     { id: 'contractors', label: 'Contractors', icon: Briefcase },
+    { id: 'admins', label: 'Admin Users', icon: Shield },
     { id: 'time', label: 'Time Records', icon: Clock },
     { id: 'invoices', label: 'Invoices', icon: DollarSign },
     { id: 'projects', label: 'Projects', icon: FileText },
@@ -58,9 +67,23 @@ const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMod
           { label: 'Active Employees', value: mockUsers.length, icon: Users, color: colors.blue },
           { label: 'Active Contractors', value: mockContractors.filter((c) => c.status === 'active').length, icon: Briefcase, color: colors.teal },
           { label: 'Active Projects', value: activeProjects.length, icon: FileText, color: colors.green },
+          { label: 'Pending Onboarding', value: mockPendingOnboarding.length, icon: UserPlus, color: colors.orange, onClick: () => setActiveTab('onboarding') },
           { label: 'Pending Approvals', value: pendingTimeEntries.length + pendingInvoices.length, icon: AlertCircle, color: colors.coral },
         ].map((stat, idx) => (
-          <div key={idx} style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <div 
+            key={idx} 
+            onClick={stat.onClick}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderRadius: '12px', 
+              padding: '20px', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              cursor: stat.onClick ? 'pointer' : 'default',
+              transition: 'transform 0.2s',
+            }}
+            onMouseOver={(e) => { if (stat.onClick) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseOut={(e) => { if (stat.onClick) e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <stat.icon size={20} color={stat.color} />
               <span style={{ color: colors.gray, fontSize: '0.85rem' }}>{stat.label}</span>
@@ -453,6 +476,230 @@ const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMod
     </div>
   );
 
+  const renderOnboarding = () => {
+    const [localPending, setLocalPending] = React.useState(mockPendingOnboarding);
+    
+    const handleApprove = (id) => {
+      // In production, this would call backend API and send email
+      alert(`Approved! Password setup email will be sent to the user.`);
+      setLocalPending(localPending.filter(p => p.id !== id));
+    };
+
+    const handleReject = (id) => {
+      if (window.confirm('Are you sure you want to reject this application?')) {
+        setLocalPending(localPending.filter(p => p.id !== id));
+      }
+    };
+
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>Pending Onboarding</h2>
+            <p style={{ color: colors.gray }}>Review and approve new employee and contractor applications</p>
+          </div>
+        </div>
+
+        {localPending.length === 0 ? (
+          <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '48px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <CheckCircle size={48} color={colors.green} style={{ marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>All Caught Up!</h3>
+            <p style={{ color: colors.gray }}>No pending onboarding applications at this time.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '16px' }}>
+            {localPending.map((item) => (
+              <div key={item.id} style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ 
+                      width: '48px', 
+                      height: '48px', 
+                      borderRadius: '12px', 
+                      backgroundColor: item.type === 'employee' ? `${colors.teal}20` : `${colors.coral}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {item.type === 'employee' ? <Users size={24} color={colors.teal} /> : <Building2 size={24} color={colors.coral} />}
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                          {item.type === 'employee' ? item.name : item.companyName}
+                        </h3>
+                        <span style={{ 
+                          padding: '2px 8px', 
+                          borderRadius: '4px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: '500',
+                          backgroundColor: item.type === 'employee' ? `${colors.teal}20` : `${colors.coral}20`,
+                          color: item.type === 'employee' ? colors.teal : colors.coral,
+                          textTransform: 'capitalize'
+                        }}>
+                          {item.type}
+                        </span>
+                      </div>
+                      {item.type === 'contractor' && (
+                        <p style={{ fontSize: '0.9rem', color: colors.gray, marginBottom: '4px' }}>Contact: {item.contactName}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: colors.gray }}>
+                        <span>{item.email}</span>
+                        <span>{item.phone}</span>
+                        <span>Submitted: {item.submittedAt}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => alert('View details modal would open here')}
+                      style={{ padding: '8px 16px', backgroundColor: 'transparent', border: `1px solid ${colors.gray}`, borderRadius: '6px', color: textColor, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}
+                    >
+                      <Eye size={16} /> View
+                    </button>
+                    <button
+                      onClick={() => handleReject(item.id)}
+                      style={{ padding: '8px 16px', backgroundColor: `${colors.coral}20`, border: 'none', borderRadius: '6px', color: colors.coral, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: '500' }}
+                    >
+                      <XCircle size={16} /> Reject
+                    </button>
+                    <button
+                      onClick={() => handleApprove(item.id)}
+                      style={{ padding: '8px 16px', backgroundColor: colors.green, border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: '500' }}
+                    >
+                      <CheckCircle size={16} /> Approve
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAdmins = () => {
+    const adminUsers = [
+      { id: 1, name: 'Matt Campbell', email: 'matt@lytcomm.com', role: 'Primary Admin', status: 'active' },
+    ];
+    const [showAddAdmin, setShowAddAdmin] = React.useState(false);
+    const [newAdminEmail, setNewAdminEmail] = React.useState('');
+
+    const handleAddAdmin = () => {
+      if (newAdminEmail) {
+        alert(`Admin invite sent to ${newAdminEmail}`);
+        setNewAdminEmail('');
+        setShowAddAdmin(false);
+      }
+    };
+
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '4px' }}>Admin Users</h2>
+            <p style={{ color: colors.gray }}>Manage portal administrators</p>
+          </div>
+          <button
+            onClick={() => setShowAddAdmin(true)}
+            style={{ padding: '10px 20px', backgroundColor: colors.teal, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}
+          >
+            <Plus size={18} /> Add Admin
+          </button>
+        </div>
+
+        {showAddAdmin && (
+          <div style={{ backgroundColor: cardBg, borderRadius: '12px', padding: '24px', marginBottom: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '16px' }}>Add Secondary Admin</h3>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: colors.gray, marginBottom: '6px' }}>Email Address</label>
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  placeholder="admin@company.com"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: `1px solid ${darkMode ? '#374151' : '#ddd'}`,
+                    borderRadius: '8px',
+                    backgroundColor: darkMode ? colors.dark : '#fff',
+                    color: textColor,
+                  }}
+                />
+              </div>
+              <button
+                onClick={handleAddAdmin}
+                style={{ padding: '12px 24px', backgroundColor: colors.green, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+              >
+                Send Invite
+              </button>
+              <button
+                onClick={() => setShowAddAdmin(false)}
+                style={{ padding: '12px 24px', backgroundColor: 'transparent', border: `1px solid ${colors.gray}`, borderRadius: '8px', color: textColor, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+            <p style={{ marginTop: '12px', fontSize: '0.85rem', color: colors.gray }}>
+              The new admin will receive an email to set up their account.
+            </p>
+          </div>
+        )}
+
+        <div style={{ backgroundColor: cardBg, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ backgroundColor: darkMode ? colors.dark : '#f8fafc' }}>
+                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: '600', fontSize: '0.85rem', color: colors.gray }}>Admin</th>
+                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: '600', fontSize: '0.85rem', color: colors.gray }}>Email</th>
+                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: '600', fontSize: '0.85rem', color: colors.gray }}>Role</th>
+                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: '600', fontSize: '0.85rem', color: colors.gray }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '14px 16px', fontWeight: '600', fontSize: '0.85rem', color: colors.gray }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adminUsers.map((admin) => (
+                <tr key={admin.id} style={{ borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}` }}>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: colors.coral, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '0.85rem' }}>
+                        {admin.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <span style={{ fontWeight: '500' }}>{admin.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 16px', color: colors.gray }}>{admin.email}</td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', backgroundColor: `${colors.coral}20`, color: colors.coral }}>
+                      {admin.role}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', backgroundColor: `${colors.green}20`, color: colors.green, textTransform: 'capitalize' }}>
+                      {admin.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    {admin.role === 'Primary Admin' ? (
+                      <span style={{ color: colors.gray, fontSize: '0.85rem' }}>—</span>
+                    ) : (
+                      <button style={{ padding: '6px 12px', backgroundColor: `${colors.coral}20`, border: 'none', borderRadius: '6px', color: colors.coral, cursor: 'pointer', fontSize: '0.85rem' }}>
+                        Remove
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   const renderSettings = () => (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '24px' }}>Settings</h2>
@@ -481,8 +728,10 @@ const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMod
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return renderDashboard();
+      case 'onboarding': return renderOnboarding();
       case 'employees': return renderEmployees();
       case 'contractors': return renderContractors();
+      case 'admins': return renderAdmins();
       case 'time': return renderTime();
       case 'invoices': return renderInvoices();
       case 'projects': return renderProjects();
@@ -519,9 +768,24 @@ const AdminDashboard = ({ setCurrentPage, loggedInUser, setLoggedInUser, darkMod
                 fontSize: '0.95rem',
                 cursor: 'pointer',
                 textAlign: 'left',
+                position: 'relative',
               }}
             >
-              <item.icon size={20} /> {item.label}
+              <item.icon size={20} /> 
+              {item.label}
+              {item.badge > 0 && (
+                <span style={{
+                  marginLeft: 'auto',
+                  padding: '2px 8px',
+                  backgroundColor: colors.coral,
+                  color: '#fff',
+                  borderRadius: '10px',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                }}>
+                  {item.badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>

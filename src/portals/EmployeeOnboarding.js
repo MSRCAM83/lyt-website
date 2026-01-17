@@ -556,7 +556,7 @@ const EmployeeOnboarding = ({ setCurrentPage, darkMode }) => {
       {/* Header */}
       <header style={{ padding: '20px', backgroundColor: colors.dark, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button
-          onClick={() => setCurrentPage('portal')}
+          onClick={() => setCurrentPage('portal-login')}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'transparent', border: 'none', color: '#fff', fontSize: '1rem', cursor: 'pointer' }}
         >
           <ArrowLeft size={20} /> Back to Portal
